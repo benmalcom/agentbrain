@@ -1,0 +1,23 @@
+{
+  "name": "@agentbrain/mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for AgentBrain",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "agentbrain-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@agentbrain/core": "*",
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "typescript": "^5.7.2"
+  }
+}
