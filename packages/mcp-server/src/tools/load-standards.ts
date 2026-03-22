@@ -2,9 +2,20 @@
 
 import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
+import { homedir } from 'node:os'
 import { AGENT_FILE_PATHS } from '@agentbrain/core'
 import type { AgentTarget } from '@agentbrain/core'
+
+/**
+ * Expand path: handles ~, relative paths, etc.
+ */
+function expandPath(path: string): string {
+  if (path.startsWith('~/') || path === '~') {
+    return path.replace('~', homedir())
+  }
+  return resolve(path)
+}
 
 export interface LoadStandardsInput {
   repo_path: string
@@ -20,8 +31,11 @@ export interface LoadStandardsOutput {
 export async function loadStandards(input: LoadStandardsInput): Promise<LoadStandardsOutput> {
   const { repo_path, agent } = input
 
+  // Expand path to handle ~, relative paths, etc.
+  const expandedPath = expandPath(repo_path)
+
   const relativePath = AGENT_FILE_PATHS[agent]
-  const filePath = join(repo_path, relativePath)
+  const filePath = join(expandedPath, relativePath)
 
   if (!existsSync(filePath)) {
     throw new Error(

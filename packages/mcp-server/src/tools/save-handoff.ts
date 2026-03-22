@@ -2,8 +2,19 @@
 
 import { writeFile, mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
+import { homedir } from 'node:os'
 import { loadAIConfig, generateHandoff } from '@agentbrain/core'
+
+/**
+ * Expand path: handles ~, relative paths, etc.
+ */
+function expandPath(path: string): string {
+  if (path.startsWith('~/') || path === '~') {
+    return path.replace('~', homedir())
+  }
+  return resolve(path)
+}
 
 export interface SaveHandoffInput {
   repo_path: string
@@ -19,18 +30,21 @@ export interface SaveHandoffOutput {
 export async function saveHandoff(input: SaveHandoffInput): Promise<SaveHandoffOutput> {
   const { repo_path, goal } = input
 
+  // Expand path to handle ~, relative paths, etc.
+  const expandedPath = expandPath(repo_path)
+
   // Load AI config
   const aiConfig = await loadAIConfig()
 
   // Generate handoff
   const result = await generateHandoff({
-    repoPath: repo_path,
+    repoPath: expandedPath,
     aiConfig,
     goal,
   })
 
   // Write to disk
-  const outputDir = join(repo_path, 'agentbrain')
+  const outputDir = join(expandedPath, 'agentbrain')
   if (!existsSync(outputDir)) {
     await mkdir(outputDir, { recursive: true })
   }

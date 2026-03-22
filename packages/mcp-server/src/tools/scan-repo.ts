@@ -1,6 +1,20 @@
 // MCP tool: scan_repo - inspect repo structure (no API key needed)
 
 import { scanRepository } from '@agentbrain/core'
+import { resolve } from 'node:path'
+import { homedir } from 'node:os'
+
+/**
+ * Expand path: handles ~, relative paths, etc.
+ */
+function expandPath(path: string): string {
+  // Expand ~ to home directory
+  if (path.startsWith('~/') || path === '~') {
+    return path.replace('~', homedir())
+  }
+  // Resolve relative paths
+  return resolve(path)
+}
 
 export interface ScanRepoInput {
   repo_path: string
@@ -20,7 +34,10 @@ export interface ScanRepoOutput {
 export async function scanRepo(input: ScanRepoInput): Promise<ScanRepoOutput> {
   const { repo_path, max_files = 100 } = input
 
-  const result = await scanRepository(repo_path, { maxFiles: max_files })
+  // Expand path to handle ~, relative paths, etc.
+  const expandedPath = expandPath(repo_path)
+
+  const result = await scanRepository(expandedPath, { maxFiles: max_files })
 
   return {
     totalFiles: result.totalFiles,
