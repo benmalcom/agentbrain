@@ -1,12 +1,37 @@
 {
   "name": "@agentbrain/mcp-server",
   "version": "1.0.0",
-  "description": "MCP server for AgentBrain",
+  "description": "Model Context Protocol server for AgentBrain - connect Claude, Cursor, and Windsurf to repository intelligence",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
     "agentbrain-mcp": "./dist/index.js"
   },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "context",
+    "claude",
+    "cursor",
+    "windsurf",
+    "coding-agent",
+    "agentbrain"
+  ],
+  "author": "AgentBrain",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/agentbrain.git",
+    "directory": "packages/mcp-server"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/agentbrain/issues"
+  },
+  "homepage": "https://github.com/yourusername/agentbrain#readme",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",

@@ -1,12 +1,37 @@
 {
   "name": "@agentbrain/cli",
   "version": "1.0.0",
-  "description": "Command-line interface for AgentBrain",
+  "description": "CLI for AgentBrain - generate smart context documentation for coding agents",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
     "agentbrain": "./dist/index.js"
   },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "cli",
+    "ai",
+    "context",
+    "documentation",
+    "codebase",
+    "claude",
+    "cursor",
+    "windsurf",
+    "coding-agent"
+  ],
+  "author": "AgentBrain",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/agentbrain.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/agentbrain/issues"
+  },
+  "homepage": "https://github.com/yourusername/agentbrain#readme",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
