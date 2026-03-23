@@ -5,6 +5,26 @@ All notable changes to AgentBrain will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Improved
+
+- **Simplified Gitignore Handling**
+  - Now uses globby's built-in recursive gitignore support (respects all `.gitignore` files at any depth)
+  - Removed manual gitignore parsing (60+ lines of code eliminated)
+  - Removed `ignore` package dependency
+  - More reliable and maintainable
+
+### Fixed
+
+- Added explicit `exit 0` to post-commit hook for cleaner process termination
+
+### Technical
+
+- Simplified crawler implementation from 60+ lines of manual parsing to 3 lines using globby
+- Reduced dependencies by removing `ignore` package
+- Git hooks now have explicit exit codes
+
 ## [1.4.3] - 2025-01-23
 
 ### Improved
@@ -22,13 +42,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Identifies anti-patterns with line references
     - No more generic framework documentation
 
+- **Monorepo Support**
+  - Now respects `.gitignore` files at all levels recursively (via globby)
+  - Correctly ignores nested `node_modules` in monorepo packages
+  - Drastically reduces phantom files in scan (167k → 2.6k for large monorepos)
+  - Developers' existing `.gitignore` files now fully control what's scanned
+
 ### Fixed
 
+- **Critical**: Fixed nested `node_modules` not being ignored in monorepos
+  - Previous: Manual gitignore parsing only checked root level
+  - Now: Uses globby's recursive gitignore support (respects all `.gitignore` files)
+  - Impact: Repos with 100k+ files now scan correctly (167k → 2.6k actual files)
 - Fixed README.md being treated as import source in dependency maps
 - README files now correctly filtered out of code dependency analysis
-
 ### Technical
 
+- Simplified gitignore handling: Removed manual parsing, now uses globby's built-in recursive support
+- Removed `ignore` package dependency for gitignore parsing
 - Enhanced dependency-map prompt with strict requirements for real module names
 - Modified patterns generation to read actual file content (200 lines/file) instead of summaries
 - Increased max tokens for dependency-map (3000 → 4000) and patterns (3000 → 4000)

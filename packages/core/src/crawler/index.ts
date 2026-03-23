@@ -1,10 +1,7 @@
 // Repo scanner with intelligent file scoring
 
 import { globby } from 'globby'
-import * as ignoreModule from 'ignore'
-import type { Ignore } from 'ignore'
 import { readFile, stat } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
 import { join, extname, basename, dirname } from 'node:path'
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
@@ -25,26 +22,12 @@ const ALWAYS_INCLUDE = new Set([
   '.windsurfrules',
 ])
 
-// Directories and patterns to always ignore
-const ALWAYS_IGNORE = [
-  'node_modules',
-  'dist',
-  'build',
-  '.git',
-  '.next',
-  '__pycache__',
-  'coverage',
-  '.turbo',
-  '.cache',
-  'vendor',
-  '.env',
-  '.env.*',
-  '*.lock',
-  'pnpm-lock.yaml',
-  'yarn.lock',
-  'package-lock.json',
-  '.agentbrain',
-  'agentbrain',
+// Additional patterns to ignore beyond .gitignore
+// These are things that might not be in .gitignore but should never be scanned
+const ALWAYS_IGNORE_PATTERNS = [
+  '.git',           // Git directory itself
+  '.agentbrain',    // Our own cache directory
+  'agentbrain',     // Our own output directory
 ]
 
 // Supported code extensions
@@ -222,22 +205,19 @@ export async function getGitHash(repoPath: string): Promise<string> {
 }
 
 /**
- * Load .gitignore rules
+ * Check if file path should be ignored (additional filtering beyond .gitignore)
  */
-async function loadGitignore(repoPath: string): Promise<Ignore> {
-  // @ts-expect-error - ignore module has non-standard ESM exports
-  const ig = ignoreModule.default ? ignoreModule.default() : ignoreModule()
-  const gitignorePath = join(repoPath, '.gitignore')
+function shouldIgnoreFile(filePath: string): boolean {
+  const pathSegments = filePath.split('/')
 
-  if (existsSync(gitignorePath)) {
-    const content = await readFile(gitignorePath, 'utf-8')
-    ig.add(content)
+  // Check if any path segment matches our always-ignore patterns
+  for (const pattern of ALWAYS_IGNORE_PATTERNS) {
+    if (pathSegments.includes(pattern)) {
+      return true
+    }
   }
 
-  // Add our always-ignore patterns
-  ig.add(ALWAYS_IGNORE)
-
-  return ig
+  return false
 }
 
 /**
@@ -254,16 +234,13 @@ export async function scanRepository(
 
   onProgress?.('Scanning file tree...')
 
-  // Load gitignore
-  const ig = await loadGitignore(repoPath)
-
-  // Find all files with supported extensions
+  // Find all files - globby handles .gitignore recursively at all levels
   const allFiles = await globby('**/*', {
     cwd: repoPath,
     dot: false,
     absolute: false,
     onlyFiles: true,
-    gitignore: false, // We handle gitignore manually
+    gitignore: true, // Respects .gitignore at all levels (including nested monorepo packages)
   })
 
   // Adaptive max files for large repos
@@ -275,8 +252,8 @@ export async function scanRepository(
   const scoredFiles: Array<{ path: string; score: number; size: number; language: string }> = []
 
   for (const filePath of allFiles) {
-    // Check if ignored
-    if (ig.ignores(filePath)) {
+    // Additional filtering beyond .gitignore
+    if (shouldIgnoreFile(filePath)) {
       continue
     }
 

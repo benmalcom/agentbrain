@@ -1,6 +1,6 @@
 {
   "name": "@agentbrain/core",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Shared intelligence layer for AgentBrain - smart context generation for coding agents",
   "type": "module",
   "main": "./dist/index.js",
@@ -46,7 +46,6 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
     "globby": "^14.0.2",
-    "ignore": "^6.0.2",
     "openai": "^4.77.3"
   },
   "devDependencies": {

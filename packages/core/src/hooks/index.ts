@@ -55,6 +55,8 @@ if command -v agentbrain >/dev/null 2>&1; then
     echo "🧠 AgentBrain: Only docs/config changed, skipping context update"
   fi
 fi
+
+exit 0
 `
 
   await writeFile(hookPath, hookContent, 'utf-8')
