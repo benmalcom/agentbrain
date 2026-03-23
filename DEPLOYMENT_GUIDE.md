@@ -180,7 +180,7 @@ Free private packages via GitHub:
 2. **Update package.json files** to use GitHub registry:
    ```json
    {
-     "name": "@yourusername/agentbrain-core",
+     "name": "@benmalcom/agentbrain-core",
      "publishConfig": {
        "registry": "https://npm.pkg.github.com"
      }
@@ -199,7 +199,7 @@ Free private packages via GitHub:
 
 5. **Install:**
    ```bash
-   npm install -g @yourusername/agentbrain-cli --registry=https://npm.pkg.github.com
+   npm install -g @benmalcom/agentbrain-cli --registry=https://npm.pkg.github.com
    ```
 
 **Pros:**

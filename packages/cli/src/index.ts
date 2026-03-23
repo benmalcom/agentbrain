@@ -8,6 +8,7 @@ import { createInitCommand } from './commands/init.js'
 import { createStandardsCommand } from './commands/standards.js'
 import { createHandoffCommand } from './commands/handoff.js'
 import { createSetupCommand } from './commands/setup.js'
+import { createDisableCommand } from './commands/disable.js'
 
 const program = new Command()
 
@@ -22,6 +23,7 @@ program.addCommand(createInitCommand())
 program.addCommand(createStandardsCommand())
 program.addCommand(createHandoffCommand())
 program.addCommand(createConfigCommand())
+program.addCommand(createDisableCommand())
 
 // Parse arguments
 program.parse()

@@ -46,8 +46,10 @@ if command -v agentbrain >/dev/null 2>&1; then
 
   # Check if any source files changed (not just docs/config)
   if echo "\$CHANGED_FILES" | grep -qE '\\.(ts|js|tsx|jsx|py|go|rs|java|c|cpp|h|hpp|rb|php|swift|kt|cs|scala|r|m|sh|bash|sql|graphql|proto|vue|svelte)\$'; then
-    echo "🧠 AgentBrain: Source files changed, updating context..."
-    agentbrain init --silent --no-confirm || true
+    echo "🧠 AgentBrain: Updating context in background..."
+    # Run in background and log output
+    (agentbrain init --silent --no-confirm > .agentbrain/update.log 2>&1 && echo "✓ Context update complete" || echo "✗ Context update failed") &
+    disown
   else
     echo "🧠 AgentBrain: Only docs/config changed, skipping context update"
   fi
@@ -91,4 +93,75 @@ export async function installAllHooks(repoPath: string): Promise<{ installed: st
   // Users should run `agentbrain handoff` manually when needed
 
   return { installed }
+}
+
+/**
+ * Remove AgentBrain sections from git hooks
+ */
+export async function uninstallPostCommitHook(repoPath: string): Promise<boolean> {
+  if (!isGitRepository(repoPath)) {
+    return false
+  }
+
+  const hookPath = join(repoPath, '.git', 'hooks', 'post-commit')
+
+  if (!existsSync(hookPath)) {
+    return false
+  }
+
+  const fs = await import('node:fs/promises')
+  const content = await fs.readFile(hookPath, 'utf-8')
+
+  // Remove AgentBrain section
+  const lines = content.split('\n')
+  const filteredLines: string[] = []
+  let inAgentBrainSection = false
+
+  for (const line of lines) {
+    if (line.includes('AgentBrain: Smart auto-regeneration')) {
+      inAgentBrainSection = true
+      continue
+    }
+    if (inAgentBrainSection && line.trim() === '') {
+      inAgentBrainSection = false
+      continue
+    }
+    if (!inAgentBrainSection) {
+      filteredLines.push(line)
+    }
+  }
+
+  const newContent = filteredLines.join('\n').trim()
+
+  if (newContent === '' || newContent === '#!/bin/sh') {
+    // Hook is now empty, delete it
+    await fs.unlink(hookPath)
+  } else {
+    // Hook has other content, write cleaned version
+    await writeFile(hookPath, newContent + '\n', 'utf-8')
+  }
+
+  return true
+}
+
+/**
+ * Uninstall all AgentBrain git hooks
+ */
+export async function uninstallAllHooks(repoPath: string): Promise<{ uninstalled: string[] }> {
+  if (!isGitRepository(repoPath)) {
+    throw new Error('Not a git repository')
+  }
+
+  const uninstalled: string[] = []
+
+  try {
+    const removed = await uninstallPostCommitHook(repoPath)
+    if (removed) {
+      uninstalled.push('post-commit')
+    }
+  } catch (error) {
+    // Continue even if uninstall fails
+  }
+
+  return { uninstalled }
 }

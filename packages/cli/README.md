@@ -78,7 +78,9 @@ agentbrain setup --skip-hooks
 **Cost:** ~$0.02-0.05 for initial generation (cached repeats are free)
 
 **Smart Git Hooks:**
-After setup, AgentBrain automatically regenerates context when you commit **source file changes**. It intelligently skips regeneration when only documentation or configuration files change, saving time and API costs.
+After setup, AgentBrain automatically regenerates context in the background when you commit **source file changes**. Git commits complete instantly while context updates in the background. It intelligently skips regeneration when only documentation or configuration files change, saving time and API costs.
+
+You can check the update status in `.agentbrain/update.log`.
 
 ---
 
@@ -99,9 +101,9 @@ agentbrain init [options]
 
 **Output:**
 Creates three files in `agentbrain/` directory:
-- `context.md` - Full repository intelligence
-- `dependency-map.md` - Service relationships and dependencies
-- `patterns.md` - Coding patterns and conventions
+- `context.md` - Navigation guide with exact file paths and function names
+- `dependency-map.md` - Actual code dependencies showing imports and data flow
+- `patterns.md` - Coding patterns and conventions found in the codebase
 
 **Example:**
 ```bash
@@ -217,6 +219,45 @@ agentbrain config --show
 - OpenAI (GPT) - keys starting with `sk-`
 
 Configuration stored at `~/.agentbrain/config.json` with secure permissions.
+
+---
+
+### `agentbrain disable`
+
+Disable or uninstall AgentBrain from your repository.
+
+**Usage:**
+```bash
+agentbrain disable [options]
+```
+
+**Options:**
+- `--remove-hooks` - Remove git hooks only
+- `--remove-files` - Remove generated context files only (agentbrain/ directory)
+- `--remove-agent-files` - Remove agent config files (CLAUDE.md, .cursorrules, etc.)
+- `--full` - Complete uninstall (removes everything)
+- `--yes` - Skip confirmation prompts
+
+**Interactive Mode:**
+If you run `agentbrain disable` without options, you'll be prompted to select what to remove.
+
+**Example:**
+```bash
+# Interactive mode - choose what to remove
+agentbrain disable
+
+# Remove only git hooks (keep context files)
+agentbrain disable --remove-hooks
+
+# Remove only generated files (keep hooks and agent files)
+agentbrain disable --remove-files
+
+# Complete uninstall without prompts
+agentbrain disable --full --yes
+```
+
+**Re-enabling:**
+To re-enable AgentBrain after disabling, simply run `agentbrain setup` again.
 
 ---
 
@@ -432,8 +473,8 @@ agentbrain init --no-cache
 
 ## Support
 
-- GitHub Issues: [Report bugs](https://github.com/yourusername/agentbrain/issues)
-- Documentation: [Full docs](https://github.com/yourusername/agentbrain)
+- GitHub Issues: [Report bugs](https://github.com/benmalcom/agentbrain/issues)
+- Documentation: [Full docs](https://github.com/benmalcom/agentbrain)
 
 ## License
 

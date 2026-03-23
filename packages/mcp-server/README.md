@@ -518,7 +518,7 @@ npm update -g @agentbrain/mcp-server
 ## Support
 
 - **Documentation:** [Main README](../../README.md)
-- **Issues:** [GitHub Issues](https://github.com/yourusername/agentbrain/issues)
+- **Issues:** [GitHub Issues](https://github.com/benmalcom/agentbrain/issues)
 - **MCP Protocol:** [modelcontextprotocol.io](https://modelcontextprotocol.io)
 
 ---

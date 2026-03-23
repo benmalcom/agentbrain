@@ -12,15 +12,18 @@ AgentBrain generates comprehensive context documentation that helps AI agents (C
 ## ✨ Features
 
 - 🚀 **One-Command Setup** - Complete automation with `agentbrain setup`
-- 🔄 **Smart Auto-Regeneration** - Git hooks automatically update context when source files change
+- 🔄 **Background Auto-Regeneration** - Git commits complete instantly, context updates in background
 - 🎯 **Auto-Injection** - Automatically injects loading instructions into agent files
-- 🤖 **Smart Context Generation** - AI analyzes your codebase and creates intelligent documentation
+- 🤖 **Smart Context Generation** - AI analyzes your codebase and creates intelligent navigation guides
+- 📊 **Large Repo Support** - Adaptive file selection (150+ files for repos >10k files)
 - 📋 **Coding Standards** - Auto-generates standards files for different AI agents
 - 🔄 **Session Handoffs** - Creates handoff docs from git diffs for session continuity
 - 💾 **Cache-First** - Repeat runs on same commit are instant and free
 - 🔌 **MCP Server** - Direct integration with Claude Desktop, Cursor, and Windsurf
 - 🔐 **BYOK** - Use your own Anthropic or OpenAI API key
-- ⚡ **Fast & Efficient** - Chunk+merge strategy optimizes costs
+- ⚡ **Fast & Efficient** - 2-3x faster with parallel generation (10x concurrency)
+- 🧪 **Fully Tested** - 64 comprehensive tests covering core functionality
+- 🛑 **Easy Disable** - `agentbrain disable` for clean uninstall
 
 ---
 
@@ -67,9 +70,11 @@ agentbrain init
 
 AgentBrain generates three powerful documentation files in `agentbrain/`:
 
-1. **`context.md`** - Complete project overview with architecture, tech stack, and file relationships
-2. **`dependency-map.md`** - Visual map of how your services and modules connect
-3. **patterns.md`** - Coding patterns, conventions, and best practices found in your code
+1. **`context.md`** - Navigation guide with exact file paths and function names (not generic descriptions)
+2. **`dependency-map.md`** - Visual map showing actual imports and code dependencies
+3. **`patterns.md`** - Coding patterns, conventions, and best practices found in your code
+
+**Note:** Context updates run in the background after git commits, so your workflow is never interrupted.
 
 ---
 
@@ -78,6 +83,9 @@ AgentBrain generates three powerful documentation files in `agentbrain/`:
 ### CLI Commands
 
 ```bash
+# One-command setup (recommended)
+agentbrain setup
+
 # Generate context documentation
 agentbrain init
 
@@ -89,6 +97,11 @@ agentbrain handoff
 
 # Manage API key
 agentbrain config
+
+# Disable/uninstall AgentBrain
+agentbrain disable                    # Interactive mode
+agentbrain disable --remove-hooks     # Remove only git hooks
+agentbrain disable --full --yes       # Complete uninstall
 ```
 
 ### Use with AI Agents
@@ -212,7 +225,8 @@ agentbrain setup
 # That's it! Now just code normally:
 # ... make changes ...
 git commit -m "Add feature"
-# → Context automatically regenerates (if source files changed)
+# → Commit completes instantly
+# → Context updates in background (check .agentbrain/update.log)
 
 # Agent already has context at session start!
 
@@ -312,9 +326,9 @@ If you find AgentBrain useful, please consider giving it a star on GitHub!
 ## 🔗 Links
 
 - **npm**: [@agentbrain/cli](https://www.npmjs.com/package/@agentbrain/cli)
-- **GitHub**: [yourusername/agentbrain](https://github.com/yourusername/agentbrain)
-- **Issues**: [Report bugs](https://github.com/yourusername/agentbrain/issues)
-- **Discussions**: [Ask questions](https://github.com/yourusername/agentbrain/discussions)
+- **GitHub**: [benmalcom/agentbrain](https://github.com/benmalcom/agentbrain)
+- **Issues**: [Report bugs](https://github.com/benmalcom/agentbrain/issues)
+- **Discussions**: [Ask questions](https://github.com/benmalcom/agentbrain/discussions)
 
 ---
 
@@ -322,7 +336,6 @@ If you find AgentBrain useful, please consider giving it a star on GitHub!
 
 **Made with 🧠 by developers, for developers**
 
-[Get Started](#-quick-start) • [Documentation](#-documentation) • [GitHub](https://github.com/yourusername/agentbrain)
+[Get Started](#-quick-start) • [Documentation](#-documentation) • [GitHub](https://github.com/benmalcom/agentbrain)
 
 </div>
-Test update

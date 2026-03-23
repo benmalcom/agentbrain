@@ -25,13 +25,13 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/agentbrain.git",
+    "url": "https://github.com/benmalcom/agentbrain.git",
     "directory": "packages/cli"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/agentbrain/issues"
+    "url": "https://github.com/benmalcom/agentbrain/issues"
   },
-  "homepage": "https://github.com/yourusername/agentbrain#readme",
+  "homepage": "https://github.com/benmalcom/agentbrain#readme",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",

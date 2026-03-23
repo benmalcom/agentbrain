@@ -49,4 +49,11 @@ export { generateHandoff } from './handoff/index.js'
 export { detectAgents, injectIntoAgentFile, injectIntoAllAgents } from './agent-inject/index.js'
 
 // Git hooks
-export { isGitRepository, installPostCommitHook, installHandoffHook, installAllHooks } from './hooks/index.js'
+export {
+  isGitRepository,
+  installPostCommitHook,
+  installHandoffHook,
+  installAllHooks,
+  uninstallPostCommitHook,
+  uninstallAllHooks,
+} from './hooks/index.js'
