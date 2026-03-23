@@ -252,8 +252,17 @@ export async function scanRepository(
     gitignore: true, // Respects .gitignore at all levels (including nested monorepo packages)
   })
 
-  // Adaptive max files for large repos
-  const adaptiveMaxFiles = allFiles.length > 10000 ? 150 : maxFiles
+  // Adaptive max files based on filtered file count (not raw count)
+  let adaptiveMaxFiles: number
+  if (allFiles.length > 10000) {
+    adaptiveMaxFiles = 150
+  } else if (allFiles.length > 2000) {
+    adaptiveMaxFiles = 120
+  } else if (allFiles.length > 500) {
+    adaptiveMaxFiles = Math.floor(allFiles.length * 0.15)
+  } else {
+    adaptiveMaxFiles = maxFiles || 80
+  }
 
   onProgress?.(`Found ${allFiles.length} total files`)
 

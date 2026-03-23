@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.6] - 2025-01-23
+
+(No changes - version alignment)
+
+## [1.4.5] - 2025-01-23
+
+### Fixed
+
+- **Adaptive file selection now works correctly**
+  - Uses tiered approach based on filtered file count (not raw count)
+  - 1,223 files → selects ~183 files (15% adaptive)
+  - 2,500 files → selects 120 files
+  - 12,000 files → selects 150 files
+
 ## [1.4.4] - 2025-01-23
 
 ### Improved
