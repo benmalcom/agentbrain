@@ -116,9 +116,6 @@ After running `agentbrain setup`, your agents automatically load context:
 Connect AgentBrain directly to your AI agent for seamless access:
 
 ```bash
-# Install MCP server
-npm install -g @agentbrain/mcp-server
-
 # Configure Claude Desktop
 # Edit: ~/Library/Application Support/Claude/claude_desktop_config.json
 ```
@@ -127,13 +124,16 @@ npm install -g @agentbrain/mcp-server
 {
   "mcpServers": {
     "agentbrain": {
-      "command": "agentbrain-mcp"
+      "command": "npx",
+      "args": ["-y", "@agentbrain/mcp-server"]
     }
   }
 }
 ```
 
 Now your agent can scan repos, load context, and save handoffs automatically!
+
+**Note:** No installation needed - `npx` handles package resolution automatically.
 
 ---
 

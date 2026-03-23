@@ -315,33 +315,25 @@ echo "🎉 AgentBrain is live! npm install -g @agentbrain/cli"
 
 ### With Claude Desktop
 
-1. **Install globally:**
-   ```bash
-   npm install -g .
-   ```
-
-2. **Find the installed location:**
-   ```bash
-   which agentbrain-mcp
-   # Returns something like: /usr/local/bin/agentbrain-mcp
-   ```
-
-3. **Update Claude Desktop config:**
+1. **Update Claude Desktop config:**
    ```json
    {
      "mcpServers": {
        "agentbrain": {
-         "command": "agentbrain-mcp"
+         "command": "npx",
+         "args": ["-y", "@agentbrain/mcp-server"]
        }
      }
    }
    ```
 
-4. **Restart Claude Desktop**
+2. **Restart Claude Desktop**
+
+**Note:** No installation needed - `npx` handles package resolution automatically.
 
 ### With Cursor / Windsurf
 
-Similar process - check their docs for MCP server configuration.
+Use the same `npx` approach - check their docs for MCP server configuration file locations.
 
 ---
 

@@ -90,15 +90,7 @@ agentbrain config
 
 ## 🔌 Use with Claude Desktop
 
-1. **Find the MCP server location:**
-   ```bash
-   cd packages/mcp-server
-   npm install -g .
-   which agentbrain-mcp
-   # Copy the path shown
-   ```
-
-2. **Add to Claude Desktop config:**
+1. **Add to Claude Desktop config:**
 
    Edit: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
@@ -106,13 +98,16 @@ agentbrain config
    {
      "mcpServers": {
        "agentbrain": {
-         "command": "/Users/YOUR_USERNAME/.nvm/versions/node/v20.19.4/bin/agentbrain-mcp"
+         "command": "npx",
+         "args": ["-y", "@agentbrain/mcp-server"]
        }
      }
    }
    ```
 
-3. **Restart Claude Desktop** and look for the 🔌 icon
+2. **Restart Claude Desktop** and look for the 🔌 icon
+
+**Note:** No installation needed - `npx` handles everything automatically!
 
 ---
 

@@ -27,20 +27,7 @@ npm install -g @agentbrain/mcp-server
 
 ### 🟣 Claude Desktop
 
-#### Step 1: Find the Server Path
-
-```bash
-which agentbrain-mcp
-```
-
-**Example output:**
-```
-/Users/yourname/.nvm/versions/node/v20.19.4/bin/agentbrain-mcp
-```
-
-**Copy this exact path** - you'll need it in the next step.
-
-#### Step 2: Edit Claude Desktop Config
+#### Step 1: Edit Claude Desktop Config
 
 **macOS:**
 ```bash
@@ -57,21 +44,20 @@ nano ~/Library/Application\ Support/Claude/claude_desktop_config.json
 %APPDATA%\Claude\claude_desktop_config.json
 ```
 
-#### Step 3: Add AgentBrain to Config
+#### Step 2: Add AgentBrain to Config
 
-Add this configuration (use the path from Step 1):
+Add this configuration:
 
 ```json
 {
   "mcpServers": {
     "agentbrain": {
-      "command": "/Users/yourname/.nvm/versions/node/v20.19.4/bin/agentbrain-mcp"
+      "command": "npx",
+      "args": ["-y", "@agentbrain/mcp-server"]
     }
   }
 }
 ```
-
-**⚠️ Important:** Use the **absolute path** you got from `which agentbrain-mcp`.
 
 **If you have other MCP servers already:**
 ```json
@@ -82,13 +68,14 @@ Add this configuration (use the path from Step 1):
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "/path/to/allowed/files"]
     },
     "agentbrain": {
-      "command": "/Users/yourname/.nvm/versions/node/v20.19.4/bin/agentbrain-mcp"
+      "command": "npx",
+      "args": ["-y", "@agentbrain/mcp-server"]
     }
   }
 }
 ```
 
-#### Step 4: Restart Claude Desktop
+#### Step 3: Restart Claude Desktop
 
 **Completely quit** Claude Desktop (don't just close the window):
 - macOS: `Cmd + Q` or Claude → Quit Claude
@@ -119,15 +106,7 @@ Claude will automatically use the AgentBrain tools!
 
 ### 🔵 Cursor
 
-#### Step 1: Find the Server Path
-
-```bash
-which agentbrain-mcp
-```
-
-Copy the output path.
-
-#### Step 2: Open Cursor MCP Settings
+#### Step 1: Open Cursor MCP Settings
 
 1. Open Cursor
 2. Press `Cmd + Shift + P` (macOS) or `Ctrl + Shift + P` (Windows/Linux)
@@ -150,30 +129,31 @@ code ~/.config/Cursor/User/globalStorage/saoudrizwan.claude-dev/settings/cline_m
 code %APPDATA%\Cursor\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json
 ```
 
-#### Step 3: Add AgentBrain Configuration
+#### Step 2: Add AgentBrain Configuration
 
 ```json
 {
   "mcpServers": {
     "agentbrain": {
-      "command": "/Users/yourname/.nvm/versions/node/v20.19.4/bin/agentbrain-mcp"
+      "command": "npx",
+      "args": ["-y", "@agentbrain/mcp-server"]
     }
   }
 }
 ```
 
-#### Step 4: Restart Cursor
+#### Step 3: Restart Cursor
 
 Completely quit and reopen Cursor.
 
-#### Step 5: Verify
+#### Step 4: Verify
 
 1. Open a project in Cursor
 2. Open the Cursor chat (usually `Cmd + L` or `Ctrl + L`)
 3. Type `@` and you should see MCP tools available
 4. Or check the MCP panel in settings
 
-#### Step 6: Use It
+#### Step 5: Use It
 
 In Cursor chat:
 ```
@@ -186,15 +166,7 @@ Cursor will automatically use the MCP tools!
 
 ### 🟢 Windsurf
 
-#### Step 1: Find the Server Path
-
-```bash
-which agentbrain-mcp
-```
-
-Copy the output path.
-
-#### Step 2: Open Windsurf Settings
+#### Step 1: Open Windsurf Settings
 
 **Method 1: Via UI**
 1. Open Windsurf
@@ -219,23 +191,24 @@ code ~/.config/Windsurf/User/globalStorage/windsurf-mcp/settings.json
 code %APPDATA%\Windsurf\User\globalStorage\windsurf-mcp\settings.json
 ```
 
-#### Step 3: Add AgentBrain
+#### Step 2: Add AgentBrain
 
 ```json
 {
   "mcpServers": {
     "agentbrain": {
-      "command": "/Users/yourname/.nvm/versions/node/v20.19.4/bin/agentbrain-mcp"
+      "command": "npx",
+      "args": ["-y", "@agentbrain/mcp-server"]
     }
   }
 }
 ```
 
-#### Step 4: Restart Windsurf
+#### Step 3: Restart Windsurf
 
 Quit completely and reopen.
 
-#### Step 5: Verify & Use
+#### Step 4: Verify & Use
 
 Look for MCP tools in the Windsurf interface, then ask:
 ```
@@ -355,30 +328,24 @@ Agent: "Handoff saved to agentbrain/handoff.md!
 
 ### "AgentBrain not showing up in my agent"
 
-**1. Check the path is correct:**
-```bash
-which agentbrain-mcp
-# Copy this exact path to your config
-```
-
-**2. Verify config file location:**
+**1. Verify config file location:**
 
 **Claude Desktop (macOS):**
 ```bash
 cat ~/Library/Application\ Support/Claude/claude_desktop_config.json
 ```
 
-**3. Check for JSON syntax errors:**
+**2. Check for JSON syntax errors:**
 - Missing commas between entries
 - Missing quotes
 - Invalid path format
 
-**4. Restart completely:**
+**3. Restart completely:**
 - Don't just close the window
 - Actually quit the application (Cmd+Q / Ctrl+Q)
 - Reopen
 
-**5. Check logs:**
+**4. Check logs:**
 
 **Claude Desktop:**
 - Go to Help → Show Logs (or Developer → Show Logs)
@@ -412,40 +379,16 @@ ls /path/to/your/project
 
 ---
 
-### "Command not found: agentbrain-mcp"
-
-```bash
-# Reinstall
-npm install -g @agentbrain/mcp-server
-
-# Verify
-which agentbrain-mcp
-```
-
----
-
-### "Getting 'permission denied' errors"
-
-```bash
-# Check file permissions
-ls -la $(which agentbrain-mcp)
-
-# Should be executable (has 'x' in permissions)
-# If not, fix it:
-chmod +x $(which agentbrain-mcp)
-```
-
----
-
 ## Configuration Examples
 
-### Minimal Configuration
+### Minimal Configuration (Recommended)
 
 ```json
 {
   "mcpServers": {
     "agentbrain": {
-      "command": "/absolute/path/to/agentbrain-mcp"
+      "command": "npx",
+      "args": ["-y", "@agentbrain/mcp-server"]
     }
   }
 }
@@ -457,7 +400,8 @@ chmod +x $(which agentbrain-mcp)
 {
   "mcpServers": {
     "agentbrain": {
-      "command": "/absolute/path/to/agentbrain-mcp",
+      "command": "npx",
+      "args": ["-y", "@agentbrain/mcp-server"],
       "env": {
         "ANTHROPIC_API_KEY": "sk-ant-..."
       }
@@ -476,7 +420,8 @@ chmod +x $(which agentbrain-mcp)
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/me/projects"]
     },
     "agentbrain": {
-      "command": "/Users/me/.nvm/versions/node/v20.19.4/bin/agentbrain-mcp"
+      "command": "npx",
+      "args": ["-y", "@agentbrain/mcp-server"]
     },
     "github": {
       "command": "npx",
