@@ -11,6 +11,9 @@ import {
   generateContext,
   estimateContextCost,
   scanRepository,
+  injectIntoAllAgents,
+  detectAgents,
+  AGENT_FILE_PATHS,
 } from '@agentbrain/core'
 import {
   displayBanner,
@@ -33,11 +36,16 @@ export function createInitCommand(): Command {
     .option('--max-files <number>', 'Maximum files to analyze', '100')
     .option('--no-cache', 'Skip cache and regenerate')
     .option('--dry-run', 'Show what would be generated without actually generating')
+    .option('--silent', 'Suppress output (for git hooks)')
+    .option('--no-confirm', 'Skip confirmation prompts')
+    .option('--no-inject', 'Skip agent file injection')
     .action(async (options) => {
       try {
         await runInit(options)
       } catch (err) {
-        error(err instanceof Error ? err.message : 'Initialization failed')
+        if (!options.silent) {
+          error(err instanceof Error ? err.message : 'Initialization failed')
+        }
         process.exit(1)
       }
     })
@@ -50,51 +58,77 @@ async function runInit(options: {
   maxFiles: string
   cache: boolean
   dryRun: boolean
+  silent: boolean
+  confirm: boolean
+  inject: boolean
 }): Promise<void> {
-  displayBanner()
+  const silent = options.silent
+
+  if (!silent) {
+    displayBanner()
+  }
 
   const repoPath = resolve(options.path)
   const maxFiles = parseInt(options.maxFiles, 10)
   const useCache = options.cache
+  const skipConfirm = !options.confirm
+  const skipInject = !options.inject
 
-  info(`Repository: ${repoPath}`)
+  if (!silent) {
+    info(`Repository: ${repoPath}`)
+  }
 
   // Load AI config
   const aiConfig = await loadAIConfig()
 
-  displayProviderInfo(aiConfig.provider, aiConfig.models)
+  if (!silent) {
+    displayProviderInfo(aiConfig.provider, aiConfig.models)
+  }
 
   // Scan repository
-  const spin = spinner('Scanning repository...')
+  const spin = silent ? null : spinner('Scanning repository...')
   const scanResult = await scanRepository(repoPath, { maxFiles })
-  spin.succeed(`Found ${scanResult.totalFiles} files, selected ${scanResult.relevantFiles.length} relevant files`)
 
-  console.log()
-  displayFileTable(scanResult.relevantFiles, 8)
+  if (!silent) {
+    spin?.succeed(`Found ${scanResult.totalFiles} files, selected ${scanResult.relevantFiles.length} relevant files`)
+    console.log()
+    displayFileTable(scanResult.relevantFiles, 8)
+  }
 
   // Estimate cost
-  info('Estimating cost...')
+  if (!silent) {
+    info('Estimating cost...')
+  }
   const estimate = await estimateContextCost(repoPath, aiConfig, maxFiles)
-  displayCostEstimate(estimate)
+
+  if (!silent) {
+    displayCostEstimate(estimate)
+  }
 
   if (options.dryRun) {
-    info('Dry run complete - no files generated')
+    if (!silent) {
+      info('Dry run complete - no files generated')
+    }
     return
   }
 
   // Confirm generation
-  const confirmed = await confirm({
-    message: 'Generate context docs?',
-    default: true,
-  })
+  if (!skipConfirm) {
+    const confirmed = await confirm({
+      message: 'Generate context docs?',
+      default: true,
+    })
 
-  if (!confirmed) {
-    info('Cancelled')
-    return
+    if (!confirmed) {
+      if (!silent) {
+        info('Cancelled')
+      }
+      return
+    }
   }
 
   // Generate context
-  const genSpin = spinner('Generating context documents...')
+  const genSpin = silent ? null : spinner('Generating context documents...')
   let lastProgress = ''
 
   const result = await generateContext({
@@ -103,14 +137,18 @@ async function runInit(options: {
     maxFiles,
     useCache,
     onProgress: (msg) => {
-      if (msg !== lastProgress) {
-        genSpin.text = msg
+      if (!silent && msg !== lastProgress) {
+        if (genSpin) {
+          genSpin.text = msg
+        }
         lastProgress = msg
       }
     },
   })
 
-  genSpin.succeed('Context generation complete!')
+  if (!silent) {
+    genSpin?.succeed('Context generation complete!')
+  }
 
   // Write files to disk
   const outputDir = join(repoPath, 'agentbrain')
@@ -124,20 +162,46 @@ async function runInit(options: {
     await writeFile(filePath, doc.content, 'utf-8')
   }
 
+  // Inject into agent files
+  if (!skipInject) {
+    const agents = detectAgents(repoPath)
+
+    if (agents.length > 0) {
+      const gitHash = scanResult.gitHash
+      const injectionResults = await injectIntoAllAgents(repoPath, gitHash)
+
+      if (!silent && injectionResults.length > 0) {
+        console.log()
+        info('Updated agent files with context loading instructions:')
+        for (const { agent, created, updated } of injectionResults) {
+          const action = created ? 'Created' : updated ? 'Updated' : 'Checked'
+          console.log(`  ✓ ${action} ${AGENT_FILE_PATHS[agent]}`)
+        }
+      }
+    } else if (!silent) {
+      console.log()
+      info('No agent files detected. Create CLAUDE.md, .cursor/rules, or .windsurfrules to enable auto-injection.')
+    }
+  }
+
   // Display summary
-  displayGeneratedFiles([
-    { name: 'agentbrain/context.md', description: 'Full repo intelligence' },
-    { name: 'agentbrain/dependency-map.md', description: 'Service relationships' },
-    { name: 'agentbrain/patterns.md', description: 'Coding patterns' },
-  ])
+  if (!silent) {
+    displayGeneratedFiles([
+      { name: 'agentbrain/context.md', description: 'Full repo intelligence' },
+      { name: 'agentbrain/dependency-map.md', description: 'Service relationships' },
+      { name: 'agentbrain/patterns.md', description: 'Coding patterns' },
+    ])
 
-  displayActualCost(result.totalTokens, result.cost)
+    displayActualCost(result.totalTokens, result.cost)
 
-  displayNextSteps([
-    'Add to your CLAUDE.md: @agentbrain/context.md',
-    'Run "agentbrain standards" to generate coding standards files',
-    'Run "agentbrain handoff" before ending sessions',
-  ])
+    const nextSteps = ['Run "agentbrain setup" to install git hooks for auto-refresh']
 
-  success('AgentBrain initialization complete!')
+    if (detectAgents(repoPath).length === 0) {
+      nextSteps.push('Create CLAUDE.md, .cursor/rules, or .windsurfrules for your agent')
+    }
+
+    displayNextSteps(nextSteps)
+
+    success('AgentBrain initialization complete!')
+  }
 }

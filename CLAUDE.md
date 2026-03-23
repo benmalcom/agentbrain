@@ -1,19 +1,11 @@
-# AgentBrain Project
+# AgentBrain Project Rules
 
-This is a TypeScript monorepo for generating smart context documentation for AI coding agents.
-
-## Project Structure
-
-- `packages/core` - Core intelligence layer
-- `packages/cli` - Command-line interface
-- `packages/mcp-server` - Model Context Protocol server
+This is the AgentBrain project - a tool for generating context documentation for AI coding agents.
 
 ## Tech Stack
-
-- TypeScript (ESM modules)
-- Node.js 18+
-- Turbo (monorepo management)
-- Anthropic & OpenAI SDKs
+- TypeScript
+- Node.js
+- Turborepo monorepo
 
 
 <!-- AgentBrain Auto-Managed Section -->
@@ -35,5 +27,5 @@ These files contain:
 
 **Do not skip this step.** This context is essential for understanding the codebase.
 
-Last updated: 2026-03-23 | Git: 91bc84a5
+Last updated: 2026-03-23 | Git: 9fa1eef1
 <!-- End AgentBrain Section -->

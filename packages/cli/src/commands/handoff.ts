@@ -14,11 +14,15 @@ export function createHandoffCommand(): Command {
     .description('Generate handoff document from git diff')
     .option('--path <path>', 'Repository path', process.cwd())
     .option('--goal <goal>', 'Session goal or objective')
+    .option('--commits <number>', 'Number of recent commits to include (default: 5)', '5')
+    .option('--auto', 'Auto mode - skip prompts and banner (for git hooks)')
     .action(async (options) => {
       try {
         await runHandoff(options)
       } catch (err) {
-        error(err instanceof Error ? err.message : 'Handoff generation failed')
+        if (!options.auto) {
+          error(err instanceof Error ? err.message : 'Handoff generation failed')
+        }
         process.exit(1)
       }
     })
@@ -26,20 +30,41 @@ export function createHandoffCommand(): Command {
   return cmd
 }
 
-async function runHandoff(options: { path: string; goal?: string }): Promise<void> {
-  displayBanner()
+async function runHandoff(options: {
+  path: string
+  goal?: string
+  commits: string
+  auto: boolean
+}): Promise<void> {
+  const auto = options.auto
+
+  if (!auto) {
+    displayBanner()
+  }
 
   const repoPath = resolve(options.path)
-  info(`Repository: ${repoPath}`)
+
+  if (!auto) {
+    info(`Repository: ${repoPath}`)
+  }
 
   // Load AI config
   const aiConfig = await loadAIConfig()
-  info(`Using ${aiConfig.provider} API\n`)
+
+  if (!auto) {
+    info(`Using ${aiConfig.provider} API\n`)
+  }
+
+  // Parse commit count
+  const commitCount = parseInt(options.commits, 10)
+  if (isNaN(commitCount) || commitCount < 1) {
+    throw new Error('Commits must be a positive number')
+  }
 
   // Get session goal if not provided
   let goal = options.goal
 
-  if (!goal) {
+  if (!goal && !auto) {
     goal = await input({
       message: 'Session goal (optional):',
       default: '',
@@ -47,15 +72,18 @@ async function runHandoff(options: { path: string; goal?: string }): Promise<voi
   }
 
   // Generate handoff
-  const spin = spinner('Analyzing changes and generating handoff...')
+  const spin = auto ? null : spinner('Analyzing changes and generating handoff...')
 
   const result = await generateHandoff({
     repoPath,
     aiConfig,
     goal: goal || undefined,
+    commitCount,
   })
 
-  spin.succeed('Handoff generation complete!')
+  if (!auto) {
+    spin?.succeed('Handoff generation complete!')
+  }
 
   // Write to disk
   const outputDir = join(repoPath, 'agentbrain')
@@ -66,21 +94,24 @@ async function runHandoff(options: { path: string; goal?: string }): Promise<voi
   const filePath = join(outputDir, 'handoff.md')
   await writeFile(filePath, result.doc.content, 'utf-8')
 
-  displayGeneratedFiles([
-    { name: 'agentbrain/handoff.md', description: 'Session handoff document' },
-  ])
+  if (!auto) {
+    displayGeneratedFiles([
+      { name: 'agentbrain/handoff.md', description: 'Session handoff document' },
+    ])
 
-  if (result.tokenCount > 0) {
-    const cost = aiConfig.provider === 'anthropic' ? result.tokenCount / 1_000_000 * 3.0 : result.tokenCount / 1_000_000 * 2.5
-    info(`Tokens used: ${result.tokenCount.toLocaleString()} (~$${cost.toFixed(4)})`)
-  } else {
-    info('No AI tokens used (no changes detected)')
+    if (result.tokenCount > 0) {
+      const cost =
+        aiConfig.provider === 'anthropic' ? (result.tokenCount / 1_000_000) * 3.0 : (result.tokenCount / 1_000_000) * 2.5
+      info(`Tokens used: ${result.tokenCount.toLocaleString()} (~$${cost.toFixed(4)})`)
+    } else {
+      info('No AI tokens used (no changes detected)')
+    }
+
+    success('Handoff document generated!')
+
+    console.log('\n📌 Next steps:\n')
+    console.log('  • Share agentbrain/handoff.md with the next developer or session')
+    console.log('  • Reference it at the start of your next session for context')
+    console.log()
   }
-
-  success('Handoff document generated!')
-
-  console.log('\n📌 Next steps:\n')
-  console.log('  • Share agentbrain/handoff.md with the next developer or session')
-  console.log('  • Reference it at the start of your next session for context')
-  console.log()
 }

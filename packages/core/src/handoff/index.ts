@@ -33,7 +33,7 @@ async function getGitDiff(repoPath: string): Promise<string> {
 /**
  * Get recent commit messages
  */
-async function getRecentCommits(repoPath: string, count: number = 5): Promise<string> {
+async function getRecentCommits(repoPath: string, count: number): Promise<string> {
   try {
     const { stdout } = await execAsync(`git log -${count} --oneline`, { cwd: repoPath })
     return stdout
@@ -75,12 +75,12 @@ async function getModifiedFiles(repoPath: string): Promise<string[]> {
 export async function generateHandoff(
   options: GenerateHandoffOptions
 ): Promise<{ doc: ContextDoc; tokenCount: number }> {
-  const { repoPath, aiConfig, goal } = options
+  const { repoPath, aiConfig, goal, commitCount = 5 } = options
   const client = new AIClient(aiConfig)
 
   // Gather git information
   const diff = await getGitDiff(repoPath)
-  const commits = await getRecentCommits(repoPath)
+  const commits = await getRecentCommits(repoPath, commitCount)
   const branch = await getCurrentBranch(repoPath)
   const modifiedFiles = await getModifiedFiles(repoPath)
 

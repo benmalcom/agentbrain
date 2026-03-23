@@ -297,10 +297,15 @@ Once configured, your agent can use these 4 tools:
 
 **What it does:** Analyzes your recent git changes and creates a handoff document for the next session.
 
+**Parameters:**
+- `repo_path` (required): Path to repository
+- `goal` (optional): Session goal or objective
+- `commit_count` (optional): Number of recent commits to include (default: 5)
+
 **Example prompts:**
 - "Save a handoff for this session"
 - "Create a handoff document with goal: implemented auth"
-- "Generate a session summary"
+- "Generate a session summary with the last 10 commits"
 
 **Cost:** ~$0.01
 

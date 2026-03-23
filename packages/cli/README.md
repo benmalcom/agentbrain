@@ -11,6 +11,19 @@ npm install -g @agentbrain/cli
 ## Quick Start
 
 ```bash
+# ONE-TIME SETUP: Complete automated setup
+cd /path/to/your/project
+agentbrain setup
+
+# That's it! AgentBrain now:
+# ✓ Generates context automatically on commits
+# ✓ Injects loading instructions into agent files
+# ✓ Keeps everything in sync with your codebase
+```
+
+### Manual Setup (Advanced)
+
+```bash
 # Configure your API key
 agentbrain config
 
@@ -26,6 +39,48 @@ agentbrain handoff
 ```
 
 ## Commands
+
+### `agentbrain setup`
+
+**One-command automated setup** for AgentBrain in your repository.
+
+**Usage:**
+```bash
+agentbrain setup [options]
+```
+
+**Options:**
+- `--path <path>` - Repository path (default: current directory)
+- `--skip-hooks` - Skip git hooks installation
+- `--skip-agent-files` - Skip agent file injection
+
+**What it does:**
+1. Detects which agents you use (Claude Code, Cursor, Windsurf)
+2. Generates initial context documentation
+3. Injects context loading instructions into agent files
+4. Installs smart git hooks for automatic regeneration
+5. Sets up complete automation
+
+**Output:**
+- Creates `agentbrain/` directory with context docs
+- Updates `CLAUDE.md`, `.cursorrules`, and/or `.windsurfrules`
+- Installs `.git/hooks/post-commit` for smart auto-regeneration
+
+**Example:**
+```bash
+# Complete automated setup
+agentbrain setup
+
+# Setup without git hooks
+agentbrain setup --skip-hooks
+```
+
+**Cost:** ~$0.02-0.05 for initial generation (cached repeats are free)
+
+**Smart Git Hooks:**
+After setup, AgentBrain automatically regenerates context when you commit **source file changes**. It intelligently skips regeneration when only documentation or configuration files change, saving time and API costs.
+
+---
 
 ### `agentbrain init`
 
@@ -87,8 +142,8 @@ agentbrain standards [options]
 
 **Output:**
 Creates agent-specific files:
-- `CLAUDE.md` - For Claude Code
-- `.cursor/rules` - For Cursor
+- `CLAUDE.md` - For Claude Code CLI
+- `.cursorrules` - For Cursor (also supports legacy `.cursor/rules`)
 - `.windsurfrules` - For Windsurf
 
 **Example:**
@@ -113,6 +168,7 @@ agentbrain handoff [options]
 **Options:**
 - `--path <path>` - Repository path (default: current directory)
 - `--goal <goal>` - Session goal or objective
+- `--commits <number>` - Number of recent commits to include (default: 5)
 
 **Output:**
 Creates `agentbrain/handoff.md` with:
@@ -126,6 +182,9 @@ Creates `agentbrain/handoff.md` with:
 ```bash
 # After making changes
 agentbrain handoff --goal "Implement user authentication"
+
+# Include more commit history
+agentbrain handoff --goal "Completed auth system" --commits 10
 ```
 
 **Cost:** ~$0.01
@@ -159,9 +218,13 @@ agentbrain config --show
 
 Configuration stored at `~/.agentbrain/config.json` with secure permissions.
 
-## Environment Variables
+---
 
-Instead of storing keys, you can use environment variables:
+## API Key Configuration
+
+AgentBrain supports multiple ways to provide your API key. They are checked in this priority order:
+
+### 1. Environment Variables (Highest Priority)
 
 ```bash
 # Anthropic
@@ -171,27 +234,71 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 export OPENAI_API_KEY="sk-..."
 ```
 
-Environment variables take priority over stored config.
+### 2. `.env` Files
+
+Create a `.env` or `.env.local` file in your project:
+
+```bash
+# In your project directory
+cat > .env <<EOF
+OPENAI_API_KEY=sk-...
+EOF
+```
+
+AgentBrain will automatically load API keys from:
+- `.env.local` in current directory
+- `.env` in current directory
+- `.env.local` in git repository root
+- `.env` in git repository root
+
+**Note:** `.env` files are loaded automatically - no need to export or source them!
+
+### 3. Stored Configuration (Lowest Priority)
+
+Use the `agentbrain config` command to store your key persistently:
+
+```bash
+agentbrain config
+```
+
+This stores the key securely at `~/.agentbrain/config.json` with 0600 permissions.
+
+---
+
+## Summary: API Key Priority
+
+1. ✅ Environment variables (`ANTHROPIC_API_KEY` or `OPENAI_API_KEY`)
+2. ✅ `.env.local` in current directory
+3. ✅ `.env` in current directory
+4. ✅ `.env.local` in git root
+5. ✅ `.env` in git root
+6. ✅ `~/.agentbrain/config.json`
 
 ## Usage with AI Agents
 
-### Claude Code
+After running `agentbrain setup`, your agents automatically load context at every session start.
 
-Add to your workspace:
+### Claude Code CLI
+
+AgentBrain injects loading instructions into `CLAUDE.md`, which Claude Code CLI reads automatically from your project root. No manual action needed.
+
+### Cursor
+
+AgentBrain injects loading instructions into `.cursorrules` (or `.cursor/rules` for legacy setups), which Cursor reads automatically. No manual action needed.
+
+### Windsurf
+
+AgentBrain injects loading instructions into `.windsurfrules`, which Windsurf reads automatically. No manual action needed.
+
+### Manual Loading (Advanced)
+
+If not using `agentbrain setup`, you can manually reference context files:
 ```markdown
-<!-- In CLAUDE.md or prompt -->
+<!-- In agent prompt or rules file -->
 @agentbrain/context.md
 @agentbrain/dependency-map.md
 @agentbrain/patterns.md
 ```
-
-### Cursor
-
-Cursor automatically loads `.cursor/rules` generated by `agentbrain standards`.
-
-### Windsurf
-
-Windsurf automatically loads `.windsurfrules` generated by `agentbrain standards`.
 
 ## Cost Estimates
 
@@ -209,6 +316,26 @@ All costs are approximate (as of January 2025):
 
 ## Workflow Example
 
+### Recommended: Automated Setup
+
+```bash
+# 1. One-time setup (do once per repo)
+cd /path/to/project
+agentbrain setup
+
+# 2. Start coding - context auto-updates on commits!
+# ... make changes ...
+git commit -m "Add feature"
+# → AgentBrain automatically regenerates context (if source files changed)
+
+# 3. Generate handoff when needed
+agentbrain handoff --goal "Completed authentication feature"
+
+# That's it! Everything else is automatic.
+```
+
+### Manual Setup (Advanced)
+
 ```bash
 # 1. Initial setup
 cd /path/to/project
@@ -225,7 +352,7 @@ agentbrain standards
 # ... make changes ...
 agentbrain handoff --goal "Add authentication feature"
 
-# 5. Regenerate context after major changes
+# 5. Manually regenerate context after changes
 agentbrain init  # Only costs money if git hash changed
 ```
 

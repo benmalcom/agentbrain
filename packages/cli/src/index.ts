@@ -7,15 +7,17 @@ import { createConfigCommand } from './commands/config.js'
 import { createInitCommand } from './commands/init.js'
 import { createStandardsCommand } from './commands/standards.js'
 import { createHandoffCommand } from './commands/handoff.js'
+import { createSetupCommand } from './commands/setup.js'
 
 const program = new Command()
 
 program
   .name('agentbrain')
   .description('Generate smart context docs for coding agents')
-  .version('1.0.0')
+  .version('1.3.2')
 
 // Add commands
+program.addCommand(createSetupCommand())
 program.addCommand(createInitCommand())
 program.addCommand(createStandardsCommand())
 program.addCommand(createHandoffCommand())
@@ -23,3 +25,4 @@ program.addCommand(createConfigCommand())
 
 // Parse arguments
 program.parse()
+// Clean test

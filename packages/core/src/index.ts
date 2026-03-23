@@ -44,3 +44,9 @@ export { generateStandards } from './standards/index.js'
 
 // Handoff generation
 export { generateHandoff } from './handoff/index.js'
+
+// Agent file injection
+export { detectAgents, injectIntoAgentFile, injectIntoAllAgents } from './agent-inject/index.js'
+
+// Git hooks
+export { isGitRepository, installPostCommitHook, installHandoffHook, installAllHooks } from './hooks/index.js'

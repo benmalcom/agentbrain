@@ -19,6 +19,7 @@ function expandPath(path: string): string {
 export interface SaveHandoffInput {
   repo_path: string
   goal?: string
+  commit_count?: number
 }
 
 export interface SaveHandoffOutput {
@@ -28,7 +29,7 @@ export interface SaveHandoffOutput {
 }
 
 export async function saveHandoff(input: SaveHandoffInput): Promise<SaveHandoffOutput> {
-  const { repo_path, goal } = input
+  const { repo_path, goal, commit_count = 5 } = input
 
   // Expand path to handle ~, relative paths, etc.
   const expandedPath = expandPath(repo_path)
@@ -41,6 +42,7 @@ export async function saveHandoff(input: SaveHandoffInput): Promise<SaveHandoffO
     repoPath: expandedPath,
     aiConfig,
     goal,
+    commitCount: commit_count,
   })
 
   // Write to disk
@@ -73,6 +75,10 @@ export const saveHandoffSchema = {
       goal: {
         type: 'string',
         description: 'Optional session goal or objective to include in handoff',
+      },
+      commit_count: {
+        type: 'number',
+        description: 'Number of recent commits to include in the handoff (default: 5)',
       },
     },
     required: ['repo_path'],
