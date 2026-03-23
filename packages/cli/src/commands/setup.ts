@@ -121,16 +121,20 @@ async function runSetup(options: {
   const aiConfig = await loadAIConfig()
   info(`✓ Using ${aiConfig.provider} API`)
 
-  // Step 3: Show cost estimate
+  // Step 3: Show cost estimate with 1.4x buffer for accuracy
   console.log()
   info('Estimating cost...')
   const maxFiles = 100 // Default for setup
   const estimate = await estimateContextCost(repoPath, aiConfig, maxFiles)
 
+  // Apply 1.4x buffer - estimates tend to be 30% under actual
+  const bufferedTokens = Math.ceil(estimate.tokens * 1.4)
+  const bufferedCost = estimate.usd * 1.4
+
   console.log()
-  console.log(`📊 Estimated cost:`)
-  console.log(`   Tokens: ~${estimate.tokens.toLocaleString()}`)
-  console.log(`   Cost: ~$${estimate.usd.toFixed(4)}`)
+  console.log(`📊 Estimated cost (up to):`)
+  console.log(`   Tokens: ~${bufferedTokens.toLocaleString()}`)
+  console.log(`   Cost: ~$${bufferedCost.toFixed(4)}`)
   console.log()
 
   const confirmed = await confirm({

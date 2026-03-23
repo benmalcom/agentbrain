@@ -1,6 +1,6 @@
 {
   "name": "@agentbrain/cli",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "CLI for AgentBrain - generate smart context documentation for coding agents",
   "type": "module",
   "main": "./dist/index.js",

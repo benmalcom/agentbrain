@@ -246,33 +246,70 @@ async function generateDependencyMap(
   client: AIClient,
   files: FileEntry[]
 ): Promise<{ content: string; tokens: number }> {
-  const fileSummaries = files
+  // Filter out README.md files - they are documentation, not import sources
+  const codeFiles = files.filter((f) => !f.path.toLowerCase().endsWith('readme.md'))
+
+  const fileSummaries = codeFiles
     .map((f) => `### ${f.path}\n${f.summary || 'No summary available'}`)
     .join('\n\n')
 
-  const prompt = `Create a CODE DEPENDENCY MAP showing how modules actually import and use each other.
+  const prompt = `Create a COMPLETE dependency map with mermaid diagrams showing how modules import and use each other.
 
 Here are file summaries with their exports and imports:
 
 ${fileSummaries}
 
-Create a dependency-map.md that shows ACTUAL CODE RELATIONSHIPS:
+CRITICAL REQUIREMENTS:
 
-1. **Module Dependencies** - Which files import from which other files?
-   - Example: "FlipGame.tsx imports useWallet() from lib/hooks/useWallet.ts"
-2. **External Packages** - What npm packages are used and where?
-   - Example: "Privy SDK used in: AuthContext, WalletProvider, ProfilePage"
-3. **Data Flow** - How does data move between modules? Name specific functions.
-   - Example: "User clicks FlipButton → calls placeBet() → updates GameContext → triggers contract call via useFlipContract()"
-4. **Entry Points** - List actual entry files (pages, API routes, main.ts)
+## 1. Module Architecture Diagram
+Create a mermaid graph showing which modules/files import from which:
+- Use REAL file paths from the summaries above (e.g., "src/auth/session.ts")
+- Show actual import relationships between files
+- Group related modules visually
 
-RULES:
-- Show ACTUAL imports, not conceptual relationships
-- Use mermaid diagrams for complex flows
-- Be specific: name functions, hooks, components
-- Focus on CODE dependencies, not file structure
+\`\`\`mermaid
+graph TD
+  A[src/auth/session.ts] --> B[src/contexts/AuthContext.tsx]
+  B --> C[src/pages/Profile.tsx]
+\`\`\`
 
-Format as markdown.`
+## 2. Complete Request Lifecycle
+Create a mermaid sequence diagram showing the FULL flow of a user request:
+- From user action → controller/page → service → database → response
+- Use REAL component/function/service names from the codebase
+- Show every step, not placeholders
+
+\`\`\`mermaid
+sequenceDiagram
+  User->>FlipButton: Click
+  FlipButton->>placeBet(): Call
+  placeBet()->>GameContext: Update state
+  GameContext->>useFlipContract(): Trigger transaction
+  useFlipContract()->>Blockchain: Send tx
+  Blockchain-->>FlipButton: Result
+\`\`\`
+
+## 3. Feature-Specific Flows (minimum 2)
+Identify the 2 most important features in the codebase and create mermaid diagrams for each:
+- Use actual file paths and function names
+- Show complete data flow from trigger to result
+- Examples: authentication flow, payment flow, data sync flow, etc.
+
+## 4. External Dependencies Table
+List external packages with WHERE they're actually used:
+
+| Package | Used In (file paths) | Purpose |
+|---------|---------------------|---------|
+| Privy SDK | src/contexts/AuthContext.tsx, src/hooks/useWallet.ts | Wallet authentication |
+
+STRICT RULES:
+- NEVER use placeholder names like "Module A" or "Service X"
+- ALWAYS use real file paths from the summaries above
+- Generate diagrams for ALL flows (Module Architecture + Request Lifecycle + 2+ Feature Flows)
+- If you cannot find real names, write "Unable to determine from provided summaries"
+- IGNORE any README.md files - they are documentation, not code
+
+Format as markdown with proper mermaid code blocks.`
 
   const response = await client.generate(
     [
@@ -282,7 +319,7 @@ Format as markdown.`
       },
     ],
     'mid',
-    { maxTokens: 3000, temperature: 0.5 }
+    { maxTokens: 4000, temperature: 0.5 }
   )
 
   return {
@@ -292,31 +329,102 @@ Format as markdown.`
 }
 
 /**
- * Generate patterns.md from file summaries
+ * Generate patterns.md from ACTUAL CODE (not summaries)
  */
 async function generatePatterns(
   client: AIClient,
+  repoPath: string,
   files: FileEntry[]
 ): Promise<{ content: string; tokens: number }> {
-  const fileSummaries = files
-    .map((f) => `### ${f.path}\n${f.summary || 'No summary available'}`)
-    .join('\n\n')
+  // Take top 8 files by score and read their actual content
+  const topFiles = [...files].sort((a, b) => b.score - a.score).slice(0, 8)
 
-  const prompt = `You are identifying coding patterns and conventions in a codebase.
+  const fileContents: string[] = []
+  for (const file of topFiles) {
+    const content = await readFileContent(repoPath, file.path)
+    if (content) {
+      const lines = content.split('\n')
+      const truncated = lines.slice(0, 200).join('\n')
+      const truncationNote = lines.length > 200 ? `\n// ... (truncated at 200 lines)` : ''
+      fileContents.push(`### ${file.path} (${file.language})\n\`\`\`${file.language.toLowerCase()}\n${truncated}${truncationNote}\n\`\`\``)
+    }
+  }
 
-Here are summaries of the files:
+  const actualCode = fileContents.join('\n\n')
 
-${fileSummaries}
+  const prompt = `You are extracting REAL coding patterns from a codebase by analyzing ACTUAL CODE.
 
-Create a patterns.md that documents:
-1. Common coding patterns used across the codebase
-2. Naming conventions for files, functions, variables
-3. Architecture patterns (MVC, layered, microservices, etc.)
-4. Error handling patterns
-5. Testing patterns
-6. Any anti-patterns to avoid
+Here is the actual code from the top 8 most important files (up to 200 lines each):
 
-Format as markdown. Be specific and provide examples from the actual code.`
+${actualCode}
+
+CREATE a patterns.md that shows an agent HOW TO CODE in this specific codebase.
+
+CRITICAL REQUIREMENT: Every pattern MUST include a REAL CODE EXAMPLE copied from the files above.
+If you cannot find a real example in the code provided, SKIP that pattern entirely.
+
+## Required Sections (with real code examples):
+
+### 1. How to Create a New Module
+Find a real module file from the code above and show it as a template:
+\`\`\`typescript
+// From [actual file path]
+[20-40 lines of real code showing module structure]
+\`\`\`
+**When to use**: Use this pattern when adding a new [feature/service/etc]
+
+### 2. How to Create a Service/Class
+Find a real service/class constructor pattern:
+\`\`\`typescript
+// From [actual file path]
+[real constructor with dependencies, decorators, etc]
+\`\`\`
+**When to use**: Use this when [specific scenario]
+
+### 3. DTO/Data Structure Patterns
+Show a real DTO or data interface:
+\`\`\`typescript
+// From [actual file path]
+[real DTO with decorators/validation]
+\`\`\`
+**When to use**: Follow this structure when [scenario]
+
+### 4. Error Handling
+Show how errors are actually thrown in THIS codebase:
+\`\`\`typescript
+// From [actual file path]
+[real error throwing code]
+\`\`\`
+**When to use**: Use this pattern when [scenario]
+
+### 5. Guards/Middleware/Decorators
+Show real guard/middleware usage:
+\`\`\`typescript
+// From [actual file path]
+[real decorator/guard usage]
+\`\`\`
+
+### 6. Naming Conventions
+Extract REAL naming patterns from the actual files provided:
+- **Files**: [real examples from file paths above]
+- **Functions**: [real function names from code above]
+- **Variables**: [real variable names from code above]
+- **Classes**: [real class names from code above]
+
+### 7. Anti-Patterns Found
+Look at the actual code and identify anything that shouldn't be replicated:
+- [specific anti-pattern found in the code with line reference]
+- Why to avoid: [explanation]
+
+STRICT RULES:
+1. DO NOT write generic framework documentation
+2. DO NOT describe patterns conceptually - show REAL CODE
+3. Every code example must be 20-40 lines from the actual files provided above
+4. Include the source file path in every code block comment
+5. If you cannot find a real example for a section, write "No clear pattern found in provided files" and skip it
+6. Focus on making it ACTIONABLE: "When adding X, copy this pattern from Y"
+
+Format as markdown with proper syntax highlighting.`
 
   const response = await client.generate(
     [
@@ -326,7 +434,7 @@ Format as markdown. Be specific and provide examples from the actual code.`
       },
     ],
     'mid',
-    { maxTokens: 3000, temperature: 0.5 }
+    { maxTokens: 4000, temperature: 0.5 }
   )
 
   return {
@@ -378,7 +486,7 @@ export async function generateContext(
   const [contextResult, depMapResult, patternsResult] = await Promise.all([
     generateContextDoc(client, files, repoPath),
     generateDependencyMap(client, files),
-    generatePatterns(client, files),
+    generatePatterns(client, repoPath, files),
   ])
 
   const totalTokens = summaryTokens + contextResult.tokens + depMapResult.tokens + patternsResult.tokens

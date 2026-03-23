@@ -78,20 +78,25 @@ export function displayFileTable(files: FileEntry[], maxRows: number = 8): void 
 }
 
 /**
- * Display cost estimate
+ * Display cost estimate with 1.4x buffer for accuracy
  */
 export function displayCostEstimate(estimate: CostEstimate): void {
-  console.log(chalk.bold('\n💰 Cost estimate:'))
+  // Apply 1.4x buffer - estimates tend to be 30% under actual
+  const bufferedTokens = Math.ceil(estimate.tokens * 1.4)
+  const bufferedCost = estimate.usd * 1.4
+
+  console.log(chalk.bold('\n💰 Cost estimate (up to):'))
 
   for (const item of estimate.breakdown) {
+    const itemBuffered = Math.ceil(item.tokens * 1.4)
     console.log(
-      `  ${chalk.gray('•')} ${item.label}: ${chalk.cyan(`~${item.tokens.toLocaleString()} tokens`)}`
+      `  ${chalk.gray('•')} ${item.label}: ${chalk.cyan(`~${itemBuffered.toLocaleString()} tokens`)}`
     )
   }
 
   console.log(
     chalk.bold(
-      `\n  → Total: ${chalk.cyan(`~${estimate.tokens.toLocaleString()} tokens`)} ${chalk.green(`(~$${estimate.usd.toFixed(4)})`)}\n`
+      `\n  → Total: ${chalk.cyan(`~${bufferedTokens.toLocaleString()} tokens`)} ${chalk.green(`(~$${bufferedCost.toFixed(4)})`)}\n`
     )
   )
 }
