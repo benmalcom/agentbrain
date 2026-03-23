@@ -9,7 +9,7 @@ import {
   detectAgents,
   loadAIConfig,
   generateContext,
-  injectIntoAllAgents,
+  injectIntoAgentFile,
   AGENT_FILE_PATHS,
   type AgentTarget,
 } from '@agentbrain/core'
@@ -71,7 +71,7 @@ async function runSetup(options: {
       message: 'Select all that apply:',
       choices: [
         { name: 'Claude Code (CLAUDE.md)', value: 'claude-code' },
-        { name: 'Cursor (.cursor/rules)', value: 'cursor' },
+        { name: 'Cursor (.cursorrules)', value: 'cursor' },
         { name: 'Windsurf (.windsurfrules)', value: 'windsurf' },
       ],
     })
@@ -135,9 +135,16 @@ async function runSetup(options: {
     info('Updating agent files...')
 
     for (const agent of selectedAgents) {
-      await injectIntoAllAgents(repoPath, gitHash)
+      const result = await injectIntoAgentFile(repoPath, agent, gitHash)
       const filePath = AGENT_FILE_PATHS[agent]
-      console.log(`  ✓ Updated ${filePath}`)
+
+      if (result.created) {
+        console.log(`  ✓ Created ${filePath}`)
+      } else if (result.updated) {
+        console.log(`  ✓ Updated ${filePath}`)
+      } else {
+        console.log(`  ✓ Checked ${filePath}`)
+      }
     }
   }
 

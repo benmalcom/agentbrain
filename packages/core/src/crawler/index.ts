@@ -92,6 +92,21 @@ const ENTRY_POINTS = new Set([
   'server.ts',
 ])
 
+// Business logic keywords (always high priority)
+const BUSINESS_LOGIC_KEYWORDS = [
+  'contract',
+  'protocol',
+  'hook',
+  'service',
+  'api',
+  'game',
+  'bet',
+  'flip',
+  'payment',
+  'auth',
+  'wallet',
+]
+
 /**
  * Detect programming language from file extension
  */
@@ -137,12 +152,33 @@ export function calculateRelevanceScore(filePath: string): number {
   const base = basename(filePath)
   const baseNoExt = basename(filePath, extname(filePath))
   const dir = dirname(filePath)
+  const lowerPath = filePath.toLowerCase()
 
   let score = 0
 
   // Always-include files get max score
   if (ALWAYS_INCLUDE.has(base)) {
     score += 100
+  }
+
+  // Business logic files get high priority (regardless of depth)
+  const hasBusinessLogic = BUSINESS_LOGIC_KEYWORDS.some(keyword =>
+    lowerPath.includes(keyword)
+  )
+  if (hasBusinessLogic) {
+    score += 60
+  }
+
+  // High-value directories get bonus
+  if (
+    dir.includes('/hooks') ||
+    dir.includes('/services') ||
+    dir.includes('/lib') ||
+    dir.includes('/api') ||
+    dir.includes('/contracts') ||
+    dir.includes('/components')
+  ) {
+    score += 40
   }
 
   // Entry points get bonus
@@ -155,9 +191,9 @@ export function calculateRelevanceScore(filePath: string): number {
     score += 30
   }
 
-  // Penalty for directory depth
+  // Gentler penalty for directory depth (was -3, now -1.5)
   const depth = dir === '.' ? 0 : dir.split('/').length
-  score -= depth * 3
+  score -= depth * 1.5
 
   // Penalty for test files
   if (
@@ -230,6 +266,9 @@ export async function scanRepository(
     gitignore: false, // We handle gitignore manually
   })
 
+  // Adaptive max files for large repos
+  const adaptiveMaxFiles = allFiles.length > 10000 ? 150 : maxFiles
+
   onProgress?.(`Found ${allFiles.length} total files`)
 
   // Filter and score files
@@ -269,7 +308,7 @@ export async function scanRepository(
 
   // Sort by score (highest first) and take top N
   scoredFiles.sort((a, b) => b.score - a.score)
-  const topFiles = scoredFiles.slice(0, maxFiles)
+  const topFiles = scoredFiles.slice(0, adaptiveMaxFiles)
 
   onProgress?.(`Selected ${topFiles.length} relevant files`)
 

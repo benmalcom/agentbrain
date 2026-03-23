@@ -14,7 +14,7 @@ async function summarizeFile(
   content: string,
   language: string
 ): Promise<{ summary: string; tokens: number }> {
-  const prompt = `You are analyzing a codebase. Summarize this ${language} file in 2-3 sentences.
+  const prompt = `Analyze this ${language} file and extract SPECIFIC information.
 
 File: ${filePath}
 
@@ -22,10 +22,15 @@ File: ${filePath}
 ${content.slice(0, 8000)} ${content.length > 8000 ? '...(truncated)' : ''}
 \`\`\`
 
-Provide a concise summary focusing on:
-1. What this file does
-2. Key exports/functions/classes
-3. Important dependencies or integrations`
+Output format (be SPECIFIC):
+1. **Exports**: List actual function/class/hook/component names (not "provides auth functionality")
+2. **Imports**: Key dependencies imported from other files or packages
+3. **Purpose**: One sentence what this code does
+
+Example:
+Exports: useAuth(), login(), logout() hooks; AuthContext provider
+Imports: Privy SDK, React Context API
+Purpose: Manages authentication state and Privy wallet connection`
 
   const response = await client.generate(
     [
@@ -100,20 +105,37 @@ async function generateContextDoc(
     .map((f) => `### ${f.path} (${f.language})\n${f.summary || 'No summary available'}`)
     .join('\n\n')
 
-  const prompt = `You are creating a comprehensive context document for a codebase to help a coding agent understand the entire project.
+  const prompt = `You are creating a NAVIGATION GUIDE for a coding agent working in this codebase.
+
+The agent needs to answer: "Where is the code that does X?"
 
 Here are summaries of ${files.length} files from the repository:
 
 ${fileSummaries}
 
-Create a well-structured context.md document that:
-1. Provides an overview of the project's purpose and architecture
-2. Lists key files and their roles
-3. Describes the tech stack and frameworks used
-4. Explains how different parts of the codebase relate to each other
-5. Highlights important patterns or conventions
+Create a context.md that helps the agent LOCATE code quickly:
 
-Format as markdown. Be comprehensive but concise.`
+## Format Requirements:
+1. **Feature Areas** - Group by actual features (auth, payments, game logic, etc.)
+2. **Exact File Paths** - For each feature, list the SPECIFIC files that implement it
+3. **Key Exports** - Name the actual functions/classes/hooks by name (not "provides functionality")
+4. **Entry Points** - Where does execution start for this feature?
+
+## Rules:
+- NO generic descriptions like "handles user authentication"
+- YES specific paths like "apps/frontend/src/lib/auth/session.ts exports useSession() hook"
+- NO "there are components for X"
+- YES "FlipCard component in apps/frontend/src/components/game/FlipCard.tsx"
+- Focus on WHERE code lives, not WHAT it does conceptually
+
+Example output format:
+### Authentication
+- **Entry**: apps/frontend/src/lib/auth/index.ts
+- **Session Management**: useSession() hook in src/lib/auth/session.ts
+- **Privy Integration**: PrivyProvider setup in src/contexts/AuthContext.tsx
+- **Protected Routes**: withAuth() HOC in src/lib/auth/withAuth.tsx
+
+Format as markdown. Be SPECIFIC with file paths and export names.`
 
   const response = await client.generate(
     [
@@ -143,19 +165,29 @@ async function generateDependencyMap(
     .map((f) => `### ${f.path}\n${f.summary || 'No summary available'}`)
     .join('\n\n')
 
-  const prompt = `You are creating a dependency map document for a codebase.
+  const prompt = `Create a CODE DEPENDENCY MAP showing how modules actually import and use each other.
 
-Here are summaries of the files:
+Here are file summaries with their exports and imports:
 
 ${fileSummaries}
 
-Create a dependency-map.md that:
-1. Shows the relationships between major components/modules
-2. Lists external dependencies (npm packages, APIs, etc.)
-3. Describes the data flow between components
-4. Identifies entry points and how they connect to the rest of the system
+Create a dependency-map.md that shows ACTUAL CODE RELATIONSHIPS:
 
-Format as markdown with diagrams using mermaid syntax where helpful.`
+1. **Module Dependencies** - Which files import from which other files?
+   - Example: "FlipGame.tsx imports useWallet() from lib/hooks/useWallet.ts"
+2. **External Packages** - What npm packages are used and where?
+   - Example: "Privy SDK used in: AuthContext, WalletProvider, ProfilePage"
+3. **Data Flow** - How does data move between modules? Name specific functions.
+   - Example: "User clicks FlipButton → calls placeBet() → updates GameContext → triggers contract call via useFlipContract()"
+4. **Entry Points** - List actual entry files (pages, API routes, main.ts)
+
+RULES:
+- Show ACTUAL imports, not conceptual relationships
+- Use mermaid diagrams for complex flows
+- Be specific: name functions, hooks, components
+- Focus on CODE dependencies, not file structure
+
+Format as markdown.`
 
   const response = await client.generate(
     [
