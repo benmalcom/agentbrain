@@ -1,6 +1,6 @@
 {
   "name": "@agentbrain/core",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "description": "Shared intelligence layer for AgentBrain - smart context generation for coding agents",
   "type": "module",
   "main": "./dist/index.js",

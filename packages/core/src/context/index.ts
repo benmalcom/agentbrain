@@ -58,7 +58,7 @@ async function summarizeFiles(
   files: FileEntry[],
   onProgress?: (msg: string) => void
 ): Promise<{ files: FileEntry[]; totalTokens: number }> {
-  const CONCURRENCY = 5
+  const CONCURRENCY = 10
   const summarizedFiles: FileEntry[] = []
   let totalTokens = 0
 
@@ -288,15 +288,13 @@ export async function generateContext(
     onProgress
   )
 
-  // Generate context docs with mid model
-  onProgress?.('Generating context.md...')
-  const contextResult = await generateContextDoc(client, files, repoPath)
-
-  onProgress?.('Generating dependency-map.md...')
-  const depMapResult = await generateDependencyMap(client, files)
-
-  onProgress?.('Generating patterns.md...')
-  const patternsResult = await generatePatterns(client, files)
+  // Generate all context docs in parallel with mid model
+  onProgress?.('Generating context docs in parallel...')
+  const [contextResult, depMapResult, patternsResult] = await Promise.all([
+    generateContextDoc(client, files, repoPath),
+    generateDependencyMap(client, files),
+    generatePatterns(client, files),
+  ])
 
   const totalTokens = summaryTokens + contextResult.tokens + depMapResult.tokens + patternsResult.tokens
   const cost = client.calculateCost(totalTokens, 'mid') // Rough estimate
