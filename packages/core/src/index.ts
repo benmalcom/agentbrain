@@ -1,4 +1,5 @@
 // Public exports for @agentbrain/core
+// v1.4.0 - Background updates, disable command, large repo support
 
 // Types
 export * from './types.js'
