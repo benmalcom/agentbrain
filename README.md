@@ -11,6 +11,9 @@ AgentBrain generates comprehensive context documentation that helps AI agents (C
 
 ## ✨ Features
 
+- 🚀 **One-Command Setup** - Complete automation with `agentbrain setup`
+- 🔄 **Smart Auto-Regeneration** - Git hooks automatically update context when source files change
+- 🎯 **Auto-Injection** - Automatically injects loading instructions into agent files
 - 🤖 **Smart Context Generation** - AI analyzes your codebase and creates intelligent documentation
 - 📋 **Coding Standards** - Auto-generates standards files for different AI agents
 - 🔄 **Session Handoffs** - Creates handoff docs from git diffs for session continuity
@@ -29,7 +32,22 @@ AgentBrain generates comprehensive context documentation that helps AI agents (C
 npm install -g @agentbrain/cli
 ```
 
-### Generate Context for Your Project
+### One-Command Setup
+
+```bash
+# Navigate to your project
+cd /path/to/your/project
+
+# Run automated setup (one time)
+agentbrain setup
+```
+
+**That's it!** AgentBrain now:
+- ✅ Auto-generates context when you commit source changes
+- ✅ Injects loading instructions into your agent files (CLAUDE.md, .cursorrules, etc.)
+- ✅ Keeps everything in sync automatically
+
+### Manual Setup (Advanced)
 
 ```bash
 # Navigate to your project
@@ -75,20 +93,21 @@ agentbrain config
 
 ### Use with AI Agents
 
-**Claude Code:**
-```markdown
-<!-- Reference in your prompts or CLAUDE.md -->
-@agentbrain/context.md
-@agentbrain/dependency-map.md
-@agentbrain/patterns.md
-```
+After running `agentbrain setup`, your agents automatically load context:
 
-**Cursor & Windsurf:**
-```bash
-# Generate agent-specific rules
-agentbrain standards
-# Creates .cursor/rules and .windsurfrules automatically
-```
+**Claude Code CLI:**
+- Reads `CLAUDE.md` automatically from project root
+- AgentBrain injects loading instructions automatically
+
+**Cursor:**
+- Reads `.cursorrules` (or `.cursor/rules` for legacy setups) automatically
+- AgentBrain injects loading instructions automatically
+
+**Windsurf:**
+- Reads `.windsurfrules` automatically
+- AgentBrain injects loading instructions automatically
+
+**No manual action needed!** Just start coding and your agent has full context.
 
 ---
 
@@ -183,16 +202,21 @@ Typical costs (as of January 2025):
 
 ## 🛠️ Workflow Examples
 
-### Daily Development
+### Daily Development (Automated)
 
 ```bash
-# Morning: Load context into your agent
-agentbrain init  # Free if cached
+# One-time setup (first day)
+cd /path/to/project
+agentbrain setup
 
-# During work: Agent has full project context
-# ... code with AI assistance ...
+# That's it! Now just code normally:
+# ... make changes ...
+git commit -m "Add feature"
+# → Context automatically regenerates (if source files changed)
 
-# End of day: Save handoff
+# Agent already has context at session start!
+
+# Generate handoff when needed
 agentbrain handoff --goal "Implemented user authentication"
 ```
 
@@ -200,12 +224,12 @@ agentbrain handoff --goal "Implemented user authentication"
 
 ```bash
 cd /path/to/project
-agentbrain init
-agentbrain standards
 
-# New dev reads agentbrain/context.md
-# Their AI agent reads the same docs
-# Everyone on same page instantly! 🚀
+# One command for complete setup
+agentbrain setup
+
+# Done! New dev and their AI agent both have full context
+# No manual steps, no forgetting to load docs! 🚀
 ```
 
 ### Multi-Repo Projects
@@ -301,3 +325,4 @@ If you find AgentBrain useful, please consider giving it a star on GitHub!
 [Get Started](#-quick-start) • [Documentation](#-documentation) • [GitHub](https://github.com/yourusername/agentbrain)
 
 </div>
+Test update
