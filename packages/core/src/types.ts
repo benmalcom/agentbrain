@@ -55,6 +55,7 @@ export interface GenerateHandoffOptions {
   repoPath: string
   aiConfig: AIConfig
   goal?: string
+  commitCount?: number // Number of recent commits to include (default: 5)
 }
 
 export interface StackAnswers {
@@ -87,8 +88,11 @@ export interface CostEstimate {
 }
 
 // Agent file paths mapping
+// Note: Cursor supports both .cursorrules (modern) and .cursor/rules (legacy)
+// We prefer .cursorrules as it's the current standard
 export const AGENT_FILE_PATHS: Record<AgentTarget, string> = {
-  'claude-code': 'CLAUDE.md',
-  cursor: '.cursor/rules',
-  windsurf: '.windsurfrules',
+  'claude-code': 'CLAUDE.md', // Claude Code CLI reads this automatically
+  cursor: '.cursorrules', // Cursor's modern rules file (also checks .cursor/rules as fallback)
+  windsurf: '.windsurfrules', // Windsurf's rules file
 }
+// Test comment
