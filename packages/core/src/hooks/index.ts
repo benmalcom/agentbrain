@@ -47,7 +47,8 @@ if command -v agentbrain >/dev/null 2>&1; then
   # Check if any source files changed (not just docs/config)
   if echo "\$CHANGED_FILES" | grep -qE '\\.(ts|js|tsx|jsx|py|go|rs|java|c|cpp|h|hpp|rb|php|swift|kt|cs|scala|r|m|sh|bash|sql|graphql|proto|vue|svelte)\$'; then
     echo "🧠 AgentBrain: Updating context in background..."
-    # Run in background and log output
+    # Run in background and log output (logs to hidden .agentbrain directory)
+    mkdir -p .agentbrain
     (agentbrain init --silent --no-confirm > .agentbrain/update.log 2>&1 && echo "✓ Context update complete" || echo "✗ Context update failed") &
     disown
   else
