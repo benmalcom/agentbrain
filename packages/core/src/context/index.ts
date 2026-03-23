@@ -6,24 +6,86 @@ import { getCachedDoc, saveCachedDoc } from '../cache/index.js'
 import type { GenerateContextOptions, ContextDoc, FileEntry, CostEstimate } from '../types.js'
 
 /**
+ * Extract export statements from code
+ */
+function extractExports(content: string, language: string): string {
+  const lines = content.split('\n')
+  const exportLines: string[] = []
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    // Match various export patterns
+    if (
+      trimmed.startsWith('export ') ||
+      trimmed.startsWith('exports.') ||
+      trimmed.startsWith('module.exports') ||
+      (language === 'python' && trimmed.startsWith('def ') && !trimmed.startsWith('    ')) ||
+      (language === 'python' && trimmed.startsWith('class ') && !trimmed.startsWith('    '))
+    ) {
+      exportLines.push(line)
+    }
+  }
+
+  return exportLines.join('\n')
+}
+
+/**
+ * Smart file truncation based on file size
+ */
+function smartTruncate(content: string, language: string): { content: string; truncated: boolean } {
+  const lines = content.split('\n')
+  const lineCount = lines.length
+
+  // Small files: full content
+  if (lineCount <= 200) {
+    return { content, truncated: false }
+  }
+
+  // Medium files (200-500 lines): first 150 lines + exports
+  if (lineCount <= 500) {
+    const firstPart = lines.slice(0, 150).join('\n')
+    const exports = extractExports(content, language)
+    return {
+      content: `${firstPart}\n\n// ... (middle section truncated) ...\n\n// Exports:\n${exports}`,
+      truncated: true,
+    }
+  }
+
+  // Large files (>500 lines): first 100 lines + exports
+  const firstPart = lines.slice(0, 100).join('\n')
+  const exports = extractExports(content, language)
+  return {
+    content: `${firstPart}\n\n// ... (large file truncated) ...\n\n// Exports:\n${exports}`,
+    truncated: true,
+  }
+}
+
+/**
  * Summarize a single file using fast model
  */
 async function summarizeFile(
   client: AIClient,
   filePath: string,
   content: string,
-  language: string
+  language: string,
+  tier: 'deep' | 'brief' = 'brief'
 ): Promise<{ summary: string; tokens: number }> {
-  const prompt = `Analyze this ${language} file and extract SPECIFIC information.
+  // Smart truncation
+  const { content: truncatedContent, truncated } = smartTruncate(content, language)
+
+  // Different prompts for different tiers
+  const prompt =
+    tier === 'deep'
+      ? `Analyze this ${language} file and extract SPECIFIC information.
 
 File: ${filePath}
 
 \`\`\`${language.toLowerCase()}
-${content.slice(0, 8000)} ${content.length > 8000 ? '...(truncated)' : ''}
+${truncatedContent.slice(0, 6000)}${truncated || truncatedContent.length > 6000 ? ' ...(truncated)' : ''}
 \`\`\`
 
 Output format (be SPECIFIC):
-1. **Exports**: List actual function/class/hook/component names (not "provides auth functionality")
+1. **Exports**: List actual function/class/hook/component names
 2. **Imports**: Key dependencies imported from other files or packages
 3. **Purpose**: One sentence what this code does
 
@@ -31,6 +93,15 @@ Example:
 Exports: useAuth(), login(), logout() hooks; AuthContext provider
 Imports: Privy SDK, React Context API
 Purpose: Manages authentication state and Privy wallet connection`
+      : `What does this ${language} file export and what is its single responsibility?
+
+File: ${filePath}
+
+\`\`\`${language.toLowerCase()}
+${truncatedContent.slice(0, 3000)}${truncated || truncatedContent.length > 3000 ? ' ...(truncated)' : ''}
+\`\`\`
+
+Answer in max 50 words: what it exports and what it does.`
 
   const response = await client.generate(
     [
@@ -40,7 +111,7 @@ Purpose: Manages authentication state and Privy wallet connection`
       },
     ],
     'fast',
-    { maxTokens: 500, temperature: 0.3 }
+    { maxTokens: tier === 'deep' ? 500 : 150, temperature: 0.3 }
   )
 
   return {
@@ -50,7 +121,7 @@ Purpose: Manages authentication state and Privy wallet connection`
 }
 
 /**
- * Summarize files in batches with concurrency control
+ * Summarize files in batches with concurrency control and two-tier approach
  */
 async function summarizeFiles(
   client: AIClient,
@@ -62,23 +133,37 @@ async function summarizeFiles(
   const summarizedFiles: FileEntry[] = []
   let totalTokens = 0
 
-  for (let i = 0; i < files.length; i += CONCURRENCY) {
-    const batch = files.slice(i, i + CONCURRENCY)
+  // Sort files by score (descending) to identify top tier
+  const sortedFiles = [...files].sort((a, b) => b.score - a.score)
 
-    onProgress?.(`Summarizing files ${i + 1}-${Math.min(i + CONCURRENCY, files.length)}...`)
+  // Top 20 files get deep summaries, rest get brief
+  const deepTierCount = Math.min(20, Math.floor(files.length * 0.2))
+
+  for (let i = 0; i < sortedFiles.length; i += CONCURRENCY) {
+    const batch = sortedFiles.slice(i, i + CONCURRENCY)
+
+    const tier = i < deepTierCount ? 'deep' : 'brief'
+    onProgress?.(
+      `Summarizing files ${i + 1}-${Math.min(i + CONCURRENCY, sortedFiles.length)} (${tier} tier)...`
+    )
 
     const results = await Promise.all(
-      batch.map(async (file) => {
+      batch.map(async (file, batchIndex) => {
         const content = await readFileContent(repoPath, file.path)
         if (!content) {
           return { file, summary: 'Unable to read file', tokens: 0 }
         }
 
+        // Determine tier for this specific file
+        const globalIndex = i + batchIndex
+        const fileTier = globalIndex < deepTierCount ? 'deep' : 'brief'
+
         const { summary, tokens } = await summarizeFile(
           client,
           file.path,
           content,
-          file.language
+          file.language,
+          fileTier
         )
         return { file: { ...file, summary }, summary, tokens }
       })

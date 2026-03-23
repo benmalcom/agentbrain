@@ -9,6 +9,7 @@ import {
   detectAgents,
   loadAIConfig,
   generateContext,
+  estimateContextCost,
   injectIntoAgentFile,
   AGENT_FILE_PATHS,
   type AgentTarget,
@@ -65,21 +66,53 @@ async function runSetup(options: {
   let selectedAgents = detectAgents(repoPath)
 
   if (selectedAgents.length === 0 && !options.skipAgentFiles) {
-    info('No agent files detected. Which agent(s) do you use?\n')
+    info('No agent files detected. Which agent(s) do you use?')
+    info('(Use SPACE to select/deselect, ENTER when done)\n')
 
-    const agents = await checkbox({
-      message: 'Select all that apply:',
-      choices: [
-        { name: 'Claude Code (CLAUDE.md)', value: 'claude-code' },
-        { name: 'Cursor (.cursorrules)', value: 'cursor' },
-        { name: 'Windsurf (.windsurfrules)', value: 'windsurf' },
-      ],
-    })
+    let agents: string[] = []
+    let attemptCount = 0
 
-    selectedAgents = agents as AgentTarget[]
+    while (agents.length === 0 && attemptCount < 3) {
+      if (attemptCount > 0) {
+        console.log()
+        console.log(
+          '⚠  No agents selected. Use SPACE BAR to toggle selections!'
+        )
+        console.log('   Select at least one, or choose "Skip" to configure later.\n')
+      }
+
+      const result = await checkbox({
+        message: attemptCount === 0
+          ? 'Select agents (SPACE to toggle, ENTER to confirm):'
+          : 'Try again - Use SPACE to select:',
+        choices: [
+          { name: 'Claude Code (CLAUDE.md)', value: 'claude-code', checked: true },
+          { name: 'Cursor (.cursorrules)', value: 'cursor', checked: true },
+          { name: 'Windsurf (.windsurfrules)', value: 'windsurf', checked: true },
+          { name: '─────────────────────', value: 'separator', disabled: true },
+          { name: 'Skip / I\'ll configure this later', value: 'skip' },
+        ],
+        required: false,
+      })
+
+      agents = result as string[]
+
+      // Remove separator if somehow selected
+      agents = agents.filter((a) => a !== 'separator')
+
+      // If user explicitly chose skip, break out
+      if (agents.includes('skip')) {
+        agents = []
+        break
+      }
+
+      attemptCount++
+    }
+
+    selectedAgents = agents.filter((a) => a !== 'skip') as AgentTarget[]
 
     if (selectedAgents.length === 0) {
-      info('\nNo agents selected. Skipping agent file creation.')
+      info('\nNo agents selected. You can run "agentbrain setup" again later to configure.')
     }
   }
 
@@ -88,10 +121,20 @@ async function runSetup(options: {
   const aiConfig = await loadAIConfig()
   info(`✓ Using ${aiConfig.provider} API`)
 
-  // Step 3: Generate context
+  // Step 3: Show cost estimate
   console.log()
+  info('Estimating cost...')
+  const maxFiles = 100 // Default for setup
+  const estimate = await estimateContextCost(repoPath, aiConfig, maxFiles)
+
+  console.log()
+  console.log(`📊 Estimated cost:`)
+  console.log(`   Tokens: ~${estimate.tokens.toLocaleString()}`)
+  console.log(`   Cost: ~$${estimate.usd.toFixed(4)}`)
+  console.log()
+
   const confirmed = await confirm({
-    message: 'Generate initial context documentation?',
+    message: 'Proceed with context generation?',
     default: true,
   })
 

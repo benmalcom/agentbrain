@@ -316,6 +316,7 @@ export async function scanRepository(
     path: f.path,
     size: f.size,
     language: f.language,
+    score: f.score,
   }))
 
   const gitHash = await getGitHash(repoPath)

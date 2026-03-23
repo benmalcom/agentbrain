@@ -17,6 +17,7 @@ export interface FileEntry {
   path: string // relative to repo root
   size: number // bytes
   language: string // detected from extension
+  score: number // relevance score for prioritization
   summary?: string // AI generated (fast model)
 }
 
