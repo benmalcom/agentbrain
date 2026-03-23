@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.4] - 2025-01-23
+
 ### Improved
 
 - **Simplified Gitignore Handling**
@@ -17,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Critical**: Nested README files no longer incorrectly cited as source code exports
+  - Only root-level README.md gets priority boost, nested module READMEs treated as documentation
+  - Prevents AI from attributing TypeScript exports to markdown files
+- Patterns analysis now uses actual implementation files (controllers, services, DTOs)
+  - Filters out index.ts re-export files and package.json
+  - Selects top 12 implementation files instead of top 8 mixed files
+  - Much better code pattern extraction
 - Added explicit `exit 0` to post-commit hook for cleaner process termination
 
 ### Technical

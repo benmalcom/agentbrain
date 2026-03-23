@@ -139,9 +139,18 @@ export function calculateRelevanceScore(filePath: string): number {
 
   let score = 0
 
-  // Always-include files get max score
+  // Always-include files get max score (but only at root level for README)
   if (ALWAYS_INCLUDE.has(base)) {
-    score += 100
+    // Special case: Only boost README.md if it's at the root
+    if (base === 'README.md' || base === 'README.mdx') {
+      if (dir === '.' || dir === '') {
+        score += 100
+      }
+      // Nested READMEs in modules get NO boost - they're just documentation
+    } else {
+      // Other always-include files (package.json, etc.) always get boost
+      score += 100
+    }
   }
 
   // Business logic files get high priority (regardless of depth)

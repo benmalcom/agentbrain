@@ -336,8 +336,31 @@ async function generatePatterns(
   repoPath: string,
   files: FileEntry[]
 ): Promise<{ content: string; tokens: number }> {
-  // Take top 8 files by score and read their actual content
-  const topFiles = [...files].sort((a, b) => b.score - a.score).slice(0, 8)
+  // Filter out index.ts files and package.json - they don't contain implementation patterns
+  // Prioritize actual implementation files: controllers, services, guards, DTOs, etc.
+  const implementationFiles = files.filter(f => {
+    const path = f.path.toLowerCase()
+    const filename = path.split('/').pop() || ''
+
+    // Exclude index files and package.json
+    if (filename === 'index.ts' || filename === 'index.js' || filename === 'package.json') {
+      return false
+    }
+
+    // Prioritize files with implementation patterns in their names
+    const hasImplementationPattern = [
+      '.controller.', '.service.', '.resolver.', '.dto.',
+      '.guard.', '.middleware.', '.decorator.', '.filter.',
+      '.pipe.', '.interceptor.', '.entity.', '.model.'
+    ].some(pattern => path.includes(pattern))
+
+    return hasImplementationPattern || f.score > 50 // Include high-scoring non-pattern files too
+  })
+
+  // Take top 12 implementation files (increased from 8 to get better coverage)
+  const topFiles = implementationFiles
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 12)
 
   const fileContents: string[] = []
   for (const file of topFiles) {
