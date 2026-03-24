@@ -35,7 +35,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage"
   },
   "dependencies": {
     "@agentbrain/core": "*",
@@ -47,6 +50,10 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.7",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "@jest/globals": "^30.3.0",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.3.0",
+    "ts-jest": "^29.4.6"
   }
 }
