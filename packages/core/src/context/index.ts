@@ -546,6 +546,22 @@ export async function generateContext(
     await saveCachedDoc(repoPath, scanResult.gitHash, doc)
   }
 
+  // Save file summaries for task-aware context
+  const { saveCache, loadCache } = await import('../cache/index.js')
+  let cache = await loadCache(repoPath)
+  if (!cache || cache.gitHash !== scanResult.gitHash) {
+    cache = {
+      gitHash: scanResult.gitHash,
+      docs: {},
+      savedAt: new Date().toISOString(),
+    }
+  }
+  cache.fileSummaries = files.map((f) => ({
+    path: f.path,
+    summary: f.summary || '',
+  }))
+  await saveCache(repoPath, cache)
+
   onProgress?.('Context generation complete!')
 
   return { docs, totalTokens, cost }

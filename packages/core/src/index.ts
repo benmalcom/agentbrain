@@ -40,6 +40,10 @@ export {
 // Context generation
 export { generateContext, estimateContextCost } from './context/index.js'
 
+// Task-aware context
+export { generateTaskContext, scoreFilesForTask } from './context/task-context.js'
+export type { TaskContextOptions, ScoredFile } from './context/task-context.js'
+
 // Standards generation
 export { generateStandards } from './standards/index.js'
 
@@ -58,3 +62,7 @@ export {
   uninstallPostCommitHook,
   uninstallAllHooks,
 } from './hooks/index.js'
+
+// Diagnostics
+export { runDiagnostics } from './doctor/index.js'
+export type { DoctorCheck, DoctorResult } from './doctor/index.js'

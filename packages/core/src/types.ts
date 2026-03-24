@@ -79,6 +79,7 @@ export interface StandardsOutput {
 export interface CacheEntry {
   gitHash: string
   docs: Partial<Record<ContextDoc['type'], ContextDoc>>
+  fileSummaries?: Array<{ path: string; summary: string }> // File summaries for task-aware context
   savedAt: string
 }
 
