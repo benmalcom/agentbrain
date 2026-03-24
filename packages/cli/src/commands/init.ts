@@ -3,7 +3,7 @@
 import { Command } from 'commander'
 import { confirm } from '@inquirer/prompts'
 import { resolve } from 'node:path'
-import { writeFile, mkdir } from 'node:fs/promises'
+import { writeFile, mkdir, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import {
@@ -194,13 +194,31 @@ async function runInit(options: {
 
     displayActualCost(result.totalTokens, result.cost)
 
-    const nextSteps = ['Run "agentbrain setup" to install git hooks for auto-refresh']
+    const nextSteps: string[] = []
+
+    // Only suggest setup if git hook is not already installed
+    const hookPath = join(repoPath, '.git', 'hooks', 'post-commit')
+    let hasHook = false
+    if (existsSync(hookPath)) {
+      try {
+        const content = await readFile(hookPath, 'utf-8')
+        hasHook = content.includes('AgentBrain')
+      } catch {
+        // Ignore read errors
+      }
+    }
+
+    if (!hasHook) {
+      nextSteps.push('Run "agentbrain setup" to install git hooks for auto-refresh')
+    }
 
     if (detectAgents(repoPath).length === 0) {
       nextSteps.push('Create CLAUDE.md, .cursor/rules, or .windsurfrules for your agent')
     }
 
-    displayNextSteps(nextSteps)
+    if (nextSteps.length > 0) {
+      displayNextSteps(nextSteps)
+    }
 
     success('AgentBrain initialization complete!')
   }

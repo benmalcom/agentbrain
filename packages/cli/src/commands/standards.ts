@@ -1,7 +1,7 @@
 // Standards command - generate CLAUDE.md / .cursorrules / .windsurfrules
 
 import { Command } from 'commander'
-import { input, checkbox } from '@inquirer/prompts'
+import { input, select } from '@inquirer/prompts'
 import { resolve } from 'node:path'
 import { writeFile, mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
@@ -81,19 +81,20 @@ async function runStandards(options: { path: string }): Promise<void> {
   }
 
   // Select target agents
-  const agents = await checkbox<AgentTarget>({
-    message: 'Generate standards for which agents?',
+  const agentChoice = await select<'all' | AgentTarget>({
+    message: 'Which agent do you want to generate standards for?',
     choices: [
-      { name: 'Claude Code (CLAUDE.md)', value: 'claude-code', checked: true },
-      { name: 'Cursor (.cursor/rules)', value: 'cursor', checked: true },
-      { name: 'Windsurf (.windsurfrules)', value: 'windsurf', checked: true },
+      { name: 'All agents (Claude Code, Cursor, Windsurf)', value: 'all' },
+      { name: 'Claude Code (CLAUDE.md)', value: 'claude-code' },
+      { name: 'Cursor (.cursor/rules)', value: 'cursor' },
+      { name: 'Windsurf (.windsurfrules)', value: 'windsurf' },
     ],
   })
 
-  if (agents.length === 0) {
-    info('No agents selected, exiting')
-    return
-  }
+  const agents: AgentTarget[] =
+    agentChoice === 'all'
+      ? ['claude-code', 'cursor', 'windsurf']
+      : [agentChoice]
 
   // Generate standards
   const spin = spinner('Generating standards files...')
@@ -139,7 +140,9 @@ async function runStandards(options: { path: string }): Promise<void> {
 
   success('Standards files generated successfully!')
 
-  console.log('\n📌 Next steps:\n')
+  console.log('\n💡 Tip: Run "agentbrain init" to inject context loading instructions into these files.\n')
+
+  console.log('📌 Next steps:\n')
   if (agents.includes('claude-code')) {
     console.log('  • Claude Code will automatically load CLAUDE.md on session start')
   }
