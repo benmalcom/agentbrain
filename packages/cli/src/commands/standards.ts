@@ -96,6 +96,20 @@ async function runStandards(options: { path: string }): Promise<void> {
       ? ['claude-code', 'cursor', 'windsurf']
       : [agentChoice]
 
+  // Show what's being generated
+  console.log()
+  if (agentChoice === 'all') {
+    info('Generating standards for all agents (Claude Code, Cursor, Windsurf)')
+  } else {
+    const agentNames = {
+      'claude-code': 'Claude Code',
+      cursor: 'Cursor',
+      windsurf: 'Windsurf',
+    }
+    info(`Generating standards for ${agentNames[agentChoice]} only`)
+  }
+  console.log()
+
   // Generate standards
   const spin = spinner('Generating standards files...')
 
