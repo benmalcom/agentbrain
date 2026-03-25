@@ -39,21 +39,61 @@ export async function installPostCommitHook(repoPath: string): Promise<void> {
 
 ${existingContent}
 
-# Smart context regeneration - only when source files change
-if command -v agentbrain >/dev/null 2>&1; then
-  # Get list of changed files in this commit
-  CHANGED_FILES=\$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null)
+# Source nvm to get correct PATH on macOS
+export NVM_DIR="\$HOME/.nvm"
+[ -s "\$NVM_DIR/nvm.sh" ] && . "\$NVM_DIR/nvm.sh" --no-use
 
-  # Check if any source files changed (not just docs/config)
-  if echo "\$CHANGED_FILES" | grep -qE '\\.(ts|js|tsx|jsx|py|go|rs|java|c|cpp|h|hpp|rb|php|swift|kt|cs|scala|r|m|sh|bash|sql|graphql|proto|vue|svelte)\$'; then
-    echo "🧠 AgentBrain: Updating context in background..."
-    # Run in background and log output (logs to hidden .agentbrain directory)
-    mkdir -p .agentbrain
-    (agentbrain init --silent --no-confirm > .agentbrain/update.log 2>&1 && echo "✓ Context update complete" || echo "✗ Context update failed") &
-    disown
-  else
-    echo "🧠 AgentBrain: Only docs/config changed, skipping context update"
-  fi
+# Find agentbrain binary - check PATH first, then common nvm locations
+AGENTBRAIN_PATH=\$(which agentbrain 2>/dev/null)
+
+if [ -z "\$AGENTBRAIN_PATH" ]; then
+  for NVM_PATH in \\
+    "\$HOME/.nvm/versions/node/v20.19.4/bin/agentbrain" \\
+    "\$HOME/.nvm/versions/node/v20.19.3/bin/agentbrain" \\
+    "\$HOME/.nvm/versions/node/v20.19.2/bin/agentbrain" \\
+    "\$HOME/.nvm/versions/node/v20.19.1/bin/agentbrain" \\
+    "\$HOME/.nvm/versions/node/v20.19.0/bin/agentbrain" \\
+    "\$HOME/.nvm/versions/node/v22.0.0/bin/agentbrain" \\
+    "/usr/local/bin/agentbrain" \\
+    "/opt/homebrew/bin/agentbrain"; do
+    if [ -f "\$NVM_PATH" ]; then
+      AGENTBRAIN_PATH="\$NVM_PATH"
+      break
+    fi
+  done
+fi
+
+if [ -z "\$AGENTBRAIN_PATH" ]; then
+  exit 0
+fi
+
+# Get list of changed files in this commit
+CHANGED_FILES=\$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null)
+
+# Check if any source files changed (not just docs/config)
+if echo "\$CHANGED_FILES" | grep -qE '\\.(ts|js|tsx|jsx|py|go|rs|java|c|cpp|h|hpp|rb|php|swift|kt|cs|scala|r|m|sh|bash|sql|graphql|proto|vue|svelte)\$'; then
+  echo "🧠 AgentBrain: updating context..."
+  REPO_PATH=\$(pwd)
+  mkdir -p "\$REPO_PATH/.agentbrain"
+
+  # Write STARTED entry immediately
+  echo "\$(date '+%Y-%m-%d %H:%M:%S') | Git: \$(git rev-parse --short HEAD) | STARTED" \\
+    >> "\$REPO_PATH/.agentbrain/update.log"
+
+  # Run in background with explicit PATH and working directory
+  nohup sh -c "
+    export PATH=\"\$(dirname \$AGENTBRAIN_PATH):\\\$PATH\"
+    cd '\$REPO_PATH'
+    START=\\\$(date +%s)
+    if '\$AGENTBRAIN_PATH' init --silent --no-confirm >> '\$REPO_PATH/.agentbrain/update.log' 2>&1; then
+      END=\\\$(date +%s)
+      echo \"\\\$(date '+%Y-%m-%d %H:%M:%S') | Git: \\\$(git -C '\$REPO_PATH' rev-parse --short HEAD) | SUCCESS | \\\$((END-START))s\" >> '\$REPO_PATH/.agentbrain/update.log'
+    else
+      echo \"\\\$(date '+%Y-%m-%d %H:%M:%S') | FAILED | agentbrain error\" >> '\$REPO_PATH/.agentbrain/update.log'
+    fi
+  " > /dev/null 2>&1 &
+else
+  echo "🧠 AgentBrain: only docs changed, skipping"
 fi
 
 exit 0

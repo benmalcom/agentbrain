@@ -11,6 +11,7 @@ import {
   generateContext,
   estimateContextCost,
   injectIntoAgentFile,
+  saveAgentConfig,
   AGENT_FILE_PATHS,
   type AgentTarget,
 } from '@agentbrain/core'
@@ -152,7 +153,12 @@ async function runSetup(options: {
   // Get git hash from result
   const gitHash = result.docs[0]?.gitHash || 'unknown'
 
-  // Step 4: Inject into agent files
+  // Step 4: Save agent config
+  if (selectedAgents.length > 0) {
+    await saveAgentConfig(repoPath, selectedAgents, '1.4.12')
+  }
+
+  // Step 5: Inject into agent files
   if (!options.skipAgentFiles && selectedAgents.length > 0) {
     console.log()
     info('Updating agent files...')
@@ -171,7 +177,7 @@ async function runSetup(options: {
     }
   }
 
-  // Step 5: Install git hooks
+  // Step 6: Install git hooks
   if (!options.skipHooks) {
     console.log()
     const installHooks = await confirm({

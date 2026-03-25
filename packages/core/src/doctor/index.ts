@@ -9,6 +9,7 @@ import { getGitHash } from '../crawler/index.js'
 import { loadCache } from '../cache/index.js'
 import { AGENT_FILE_PATHS } from '../types.js'
 import type { AgentTarget } from '../types.js'
+import { loadAgentConfig } from '../config/agent-config.js'
 
 export interface DoctorCheck {
   name: string
@@ -253,27 +254,47 @@ async function checkHookLog(repoPath: string): Promise<DoctorCheck> {
     return {
       name: 'hook_log',
       status: 'warn',
-      message: 'no log found — hook may not be running',
+      message: 'no log found — hook hasn\'t run yet',
+      fix: 'git commit (make a commit to trigger the hook)',
     }
   }
 
   try {
     const content = await readFile(logPath, 'utf-8')
-    const lines = content.trim().split('\n')
-    const lastLine = lines[lines.length - 1]
+    const lines = content.trim().split('\n').filter(Boolean)
 
-    if (lastLine && lastLine.includes('complete')) {
+    if (lines.length === 0) {
+      return {
+        name: 'hook_log',
+        status: 'warn',
+        message: 'log is empty',
+      }
+    }
+
+    // Get most recent entry
+    const lastEntry = lines[lines.length - 1]
+
+    // Check if last entry was successful
+    if (lastEntry.includes('SUCCESS')) {
+      const entryCount = lines.length
       return {
         name: 'hook_log',
         status: 'pass',
-        message: 'recent activity logged',
+        message: `${entryCount} update${entryCount === 1 ? '' : 's'} logged · last: success`,
+      }
+    } else if (lastEntry.includes('FAILED')) {
+      return {
+        name: 'hook_log',
+        status: 'warn',
+        message: 'last update failed — check "agentbrain status"',
+        fix: 'agentbrain status (view full log)',
       }
     }
 
     return {
       name: 'hook_log',
-      status: 'warn',
-      message: 'log exists but no successful runs',
+      status: 'pass',
+      message: `log exists · ${lines.length} entries`,
     }
   } catch {
     return {
@@ -287,7 +308,12 @@ async function checkHookLog(repoPath: string): Promise<DoctorCheck> {
 async function checkAgentFiles(repoPath: string): Promise<DoctorCheck[]> {
   const checks: DoctorCheck[] = []
 
-  for (const [agent, filePath] of Object.entries(AGENT_FILE_PATHS) as [AgentTarget, string][]) {
+  // Load agent config to check only selected agents
+  const config = await loadAgentConfig(repoPath)
+  const agentsToCheck = config?.selectedAgents || (['claude-code', 'cursor', 'windsurf'] as AgentTarget[])
+
+  for (const agent of agentsToCheck) {
+    const filePath = AGENT_FILE_PATHS[agent]
     const fullPath = join(repoPath, filePath)
 
     if (!existsSync(fullPath)) {

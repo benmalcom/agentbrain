@@ -66,3 +66,7 @@ export {
 // Diagnostics
 export { runDiagnostics } from './doctor/index.js'
 export type { DoctorCheck, DoctorResult } from './doctor/index.js'
+
+// Agent configuration
+export { saveAgentConfig, loadAgentConfig } from './config/agent-config.js'
+export type { AgentConfig } from './config/agent-config.js'
