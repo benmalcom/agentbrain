@@ -31,6 +31,9 @@ agentbrain config
 cd /path/to/your/project
 agentbrain init
 
+# Generate task specification (optional)
+agentbrain spec "add user authentication"
+
 # Generate coding standards
 agentbrain standards
 
@@ -118,6 +121,117 @@ agentbrain init --path ~/my-project --max-files 50
 ```
 
 **Cost:** ~$0.02-0.05 for typical repositories (cached repeats are free)
+
+---
+
+### `agentbrain spec`
+
+Generate a structured specification for a task or feature using AI-guided prompts.
+
+**Usage:**
+```bash
+agentbrain spec [task-description] [options]
+```
+
+**Arguments:**
+- `task-description` - Brief task description (e.g., "add user authentication")
+
+**Options:**
+- `--path <path>` - Repository path (default: current directory)
+
+**Interactive prompts:**
+The command guides you through 5 questions to create a comprehensive spec:
+1. **Problem** - What problem does this solve? (1-2 sentences)
+2. **Approach** - What's your approach or implementation idea? (or "not sure yet")
+3. **Out of Scope** - What should the agent NOT touch or change?
+4. **Done Criteria** - What does "done" look like? (acceptance criteria)
+5. **Risks** - Any edge cases or risks to consider?
+
+**Output:**
+Creates `agentbrain/specs/{task-slug}.md` with:
+- Problem statement
+- Scope boundaries
+- Acceptance criteria checklist
+- Risks & edge cases
+- Implementation notes (AI-generated using repository context)
+- Task checklist (ordered by dependency)
+
+**Automatic Injection:**
+Injects spec reference into your agent files (CLAUDE.md, .cursorrules, .windsurfrules) so the agent reads the spec before implementing.
+
+**Example:**
+```bash
+# Generate spec with interactive prompts
+agentbrain spec "add OAuth authentication"
+
+# The command will:
+# 1. Ask 5 questions to gather requirements
+# 2. Use repository context to generate implementation notes
+# 3. Create agentbrain/specs/add-oauth-authentication.md
+# 4. Inject "Active Spec" reference into agent files
+# 5. Agent automatically reads spec at session start
+```
+
+**Example Spec Output:**
+```markdown
+# Spec: add OAuth authentication
+
+*Created: 2025-01-15 | Repo: my-project*
+
+## Problem
+Users need to authenticate using OAuth providers instead of just email/password.
+
+## Scope
+**Out of scope:** Social login with Facebook/Twitter
+
+## Acceptance Criteria
+- [ ] OAuth flow works with Google
+- [ ] Tokens are stored securely
+- [ ] Existing users can link OAuth accounts
+
+## Risks & Edge Cases
+- Token expiry handling
+- Race conditions during OAuth callback
+
+## Implementation Notes
+- Use existing auth middleware pattern from src/auth/
+- Store OAuth tokens in encrypted user_credentials table
+- Add OAuth callback route to existing auth router
+- Follow repository's error handling pattern
+
+## Task Checklist
+- [ ] Add OAuth provider configuration
+- [ ] Implement OAuth callback handler
+- [ ] Create token storage schema
+- [ ] Add OAuth middleware
+- [ ] Update auth routes
+- [ ] Write integration tests
+```
+
+**MCP Integration:**
+After creating a spec, agents can load it via the MCP `load_spec` tool:
+```typescript
+// Agent automatically loads via injected reference
+// Or manually via MCP:
+load_spec({ repoPath: "/path/to/repo", task: "add-oauth-authentication" })
+```
+
+**Cost:** ~$0.01-0.02 (uses fast model with context-aware generation)
+
+**Workflow:**
+```bash
+# 1. Plan feature with spec
+agentbrain spec "add OAuth authentication"
+
+# 2. Agent reads spec automatically at session start
+# (Injected into CLAUDE.md, .cursorrules, .windsurfrules)
+
+# 3. Implement feature following the spec
+# ... coding session ...
+
+# 4. Remove spec reference when done
+# (Manually edit agent files or use agentbrain disable)
+```
 
 ---
 
@@ -349,6 +463,7 @@ All costs are approximate (as of January 2025):
 |-----------|--------|-----------|--------|
 | Init (small) | 10-20K | $0.02-0.05 | $0.02-0.04 |
 | Init (medium) | 30-50K | $0.08-0.15 | $0.07-0.12 |
+| Spec | 3-5K | $0.01-0.02 | $0.01-0.02 |
 | Standards | 5-8K | $0.01-0.02 | $0.01-0.02 |
 | Handoff | 3-5K | $0.01 | $0.01 |
 | **Cached repeat** | 0 | **$0.00** | **$0.00** |

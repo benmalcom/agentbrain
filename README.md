@@ -16,6 +16,7 @@ AgentBrain generates comprehensive context documentation that helps AI agents (C
 - 🎯 **Auto-Injection** - Automatically injects loading instructions into agent files
 - 🤖 **Smart Context Generation** - AI analyzes your codebase and creates intelligent navigation guides
 - 📊 **Large Repo Support** - Adaptive file selection (150+ files for repos >10k files)
+- 📝 **Spec-Driven Development** - Generate structured task specs with AI-guided prompts
 - 📋 **Coding Standards** - Auto-generates standards files for different AI agents
 - 🔄 **Session Handoffs** - Creates handoff docs from git diffs for session continuity
 - 💾 **Cache-First** - Repeat runs on same commit are instant and free
@@ -88,6 +89,9 @@ agentbrain setup
 
 # Generate context documentation
 agentbrain init
+
+# Generate task specification
+agentbrain spec
 
 # Generate coding standards
 agentbrain standards
@@ -206,6 +210,7 @@ Typical costs (as of January 2025):
 |-----------|------------|-------------|------------|
 | **First run** | $0.02-0.05 | $0.08-0.15 | $0.15-0.30 |
 | **Cached run** | $0.00 | $0.00 | $0.00 |
+| **Spec** | $0.01-0.02 | $0.01-0.02 | $0.01-0.02 |
 | **Standards** | $0.01-0.02 | $0.01-0.02 | $0.01-0.02 |
 | **Handoff** | $0.01 | $0.01 | $0.01 |
 

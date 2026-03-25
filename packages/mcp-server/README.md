@@ -8,6 +8,7 @@ This MCP server lets **Claude Desktop**, **Cursor**, and **Windsurf** access Age
 
 - 🔍 Scan your repository structure
 - 📖 Load comprehensive codebase context
+- 📝 Load task specifications
 - 📋 Read coding standards
 - 💾 Save session handoffs
 
@@ -87,9 +88,10 @@ Then reopen it.
 
 1. Start a new conversation in Claude Desktop
 2. Look for the **🔌 icon** in the toolbar or bottom of the chat
-3. Click it - you should see "agentbrain" with 4 tools:
+3. Click it - you should see "agentbrain" with 5 tools:
    - `scan_repo`
    - `load_context`
+   - `load_spec`
    - `load_standards`
    - `save_handoff`
 
@@ -219,7 +221,7 @@ Look for MCP tools in the Windsurf interface, then ask:
 
 ## Available Tools
 
-Once configured, your agent can use these 4 tools:
+Once configured, your agent can use these 5 tools:
 
 ### 1. `scan_repo` - Analyze Repository Structure
 
@@ -251,7 +253,41 @@ Once configured, your agent can use these 4 tools:
 
 ---
 
-### 3. `load_standards` - Load Coding Standards
+### 3. `load_spec` - Load Task Specification
+
+**What it does:** Loads a task specification file by name, or lists all available specs if no task is specified.
+
+**Parameters:**
+- `repoPath` (required): Path to repository
+- `task` (optional): Task description or slug (e.g., "add-oauth-authentication")
+
+**Example prompts:**
+- "Load the spec for add-oauth-authentication"
+- "Show me available specs"
+- "Load the task spec for user authentication"
+
+**Returns:**
+If task specified: The spec content
+If no task: List of all available specs in agentbrain/specs/
+
+**Cost:** Free - reads from disk
+
+**Note:** Specs must be created first using `agentbrain spec` CLI command.
+
+**Example usage:**
+```typescript
+// List all specs
+load_spec({ repoPath: "/path/to/project" })
+// Returns: "Available specs:\n\n- add-oauth-authentication\n- implement-notifications"
+
+// Load specific spec
+load_spec({ repoPath: "/path/to/project", task: "add-oauth-authentication" })
+// Returns: Full spec content with problem, approach, acceptance criteria, etc.
+```
+
+---
+
+### 4. `load_standards` - Load Coding Standards
 
 **What it does:** Loads the coding standards file for your specific agent (CLAUDE.md, .cursor/rules, or .windsurfrules).
 
@@ -266,7 +302,7 @@ Once configured, your agent can use these 4 tools:
 
 ---
 
-### 4. `save_handoff` - Save Session Handoff
+### 5. `save_handoff` - Save Session Handoff
 
 **What it does:** Analyzes your recent git changes and creates a handoff document for the next session.
 
@@ -484,6 +520,7 @@ This gives your agent full project awareness immediately.
 **Q: Does this cost money?**
 A: Depends on the tool:
 - `scan_repo` - Free
+- `load_spec` - Free
 - `load_standards` - Free
 - `load_context` (cached) - Free
 - `load_context` (first time) - ~$0.02-0.05
