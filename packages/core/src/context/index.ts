@@ -154,37 +154,32 @@ async function summarizeFiles(
   const summarizedFiles: FileEntry[] = []
   let totalTokens = 0
 
-  // Sort files by score (descending) to identify top tier
+  // IMPORTANT: Always use 'brief' tier for cached file summaries
+  // The 'deep' tier (numbered lists) confuses the scoring AI
+  // Deep analysis is done separately in task-context.ts for high-scoring files
   const sortedFiles = [...files].sort((a, b) => b.score - a.score)
-
-  // Top 20 files get deep summaries, rest get brief
-  const deepTierCount = Math.min(20, Math.floor(files.length * 0.2))
 
   for (let i = 0; i < sortedFiles.length; i += CONCURRENCY) {
     const batch = sortedFiles.slice(i, i + CONCURRENCY)
 
-    const tier = i < deepTierCount ? 'deep' : 'brief'
     onProgress?.(
-      `Summarizing files ${i + 1}-${Math.min(i + CONCURRENCY, sortedFiles.length)} (${tier} tier)...`
+      `Summarizing files ${i + 1}-${Math.min(i + CONCURRENCY, sortedFiles.length)}...`
     )
 
     const results = await Promise.all(
-      batch.map(async (file, batchIndex) => {
+      batch.map(async (file) => {
         const content = await readFileContent(repoPath, file.path)
         if (!content) {
           return { file, summary: 'Unable to read file', tokens: 0 }
         }
 
-        // Determine tier for this specific file
-        const globalIndex = i + batchIndex
-        const fileTier = globalIndex < deepTierCount ? 'deep' : 'brief'
-
+        // Always use 'brief' tier for prose summaries that work well with scoring
         const { summary, tokens } = await summarizeFile(
           client,
           file.path,
           content,
           file.language,
-          fileTier
+          'brief'
         )
         return { file: { ...file, summary }, summary, tokens }
       })

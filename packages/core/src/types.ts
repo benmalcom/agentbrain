@@ -81,6 +81,7 @@ export interface CacheEntry {
   gitHash: string
   docs: Partial<Record<ContextDoc['type'], ContextDoc>>
   fileSummaries?: Array<{ path: string; summary: string }> // File summaries for task-aware context
+  deepAnalyses?: Record<string, string> // Deep code structure analysis keyed by filePath:gitHash
   savedAt: string
 }
 

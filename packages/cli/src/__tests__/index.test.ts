@@ -9,12 +9,6 @@ describe('CLI entry point', () => {
 })
 
 describe('CLI command registration', () => {
-  it('registers context command', async () => {
-    const { createContextCommand } = await import('../commands/context.js')
-    const cmd = createContextCommand()
-    expect(cmd.name()).toBe('context')
-  })
-
   it('registers doctor command', async () => {
     const { createDoctorCommand } = await import('../commands/doctor.js')
     const cmd = createDoctorCommand()

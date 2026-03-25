@@ -9,7 +9,6 @@ import { createStandardsCommand } from './commands/standards.js'
 import { createHandoffCommand } from './commands/handoff.js'
 import { createSetupCommand } from './commands/setup.js'
 import { createDisableCommand } from './commands/disable.js'
-import { createContextCommand } from './commands/context.js'
 import { createDoctorCommand } from './commands/doctor.js'
 import { createStatusCommand } from './commands/status.js'
 
@@ -23,7 +22,6 @@ program
 // Add commands
 program.addCommand(createSetupCommand())
 program.addCommand(createInitCommand())
-program.addCommand(createContextCommand())
 program.addCommand(createStandardsCommand())
 program.addCommand(createHandoffCommand())
 program.addCommand(createDoctorCommand())

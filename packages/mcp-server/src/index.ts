@@ -17,8 +17,6 @@ import { loadContext, loadContextSchema } from './tools/load-context.js'
 import type { LoadContextInput } from './tools/load-context.js'
 import { saveHandoff, saveHandoffSchema } from './tools/save-handoff.js'
 import type { SaveHandoffInput } from './tools/save-handoff.js'
-import { loadTaskContext, loadTaskContextSchema } from './tools/load-task-context.js'
-import type { LoadTaskContextInput } from './tools/load-task-context.js'
 
 // Create MCP server
 const server = new Server(
@@ -40,7 +38,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       scanRepoSchema,
       loadStandardsSchema,
       loadContextSchema,
-      loadTaskContextSchema,
       saveHandoffSchema,
     ],
   }
@@ -85,19 +82,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: `Handoff saved to ${result.filePath}\n\nTokens used: ${result.tokensUsed}\n\n---\n\n${result.content}`,
-            },
-          ],
-        }
-      }
-
-      case 'load_task_context': {
-        const typedArgs = args as unknown as LoadTaskContextInput
-        const result = await loadTaskContext(typedArgs)
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `${result.content}\n\n---\n\n[Task: "${typedArgs.task}", Scored ${result.totalFilesScored} files, Selected top ${result.selectedFiles}, Tokens: ${result.tokensUsed}, Cost: ~$${result.cost.toFixed(4)}]`,
             },
           ],
         }
