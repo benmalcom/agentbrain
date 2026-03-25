@@ -42,6 +42,7 @@ export interface GenerateContextOptions {
   aiConfig: AIConfig
   maxFiles?: number
   useCache?: boolean
+  smartCache?: boolean // Reuse file summaries for unchanged files
   onProgress?: (msg: string) => void
 }
 

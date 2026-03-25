@@ -73,25 +73,31 @@ CHANGED_FILES=\$(git diff-tree --no-commit-id --name-only -r HEAD 2>/dev/null)
 # Check if any source files changed (not just docs/config)
 if echo "\$CHANGED_FILES" | grep -qE '\\.(ts|js|tsx|jsx|py|go|rs|java|c|cpp|h|hpp|rb|php|swift|kt|cs|scala|r|m|sh|bash|sql|graphql|proto|vue|svelte)\$'; then
   echo "🧠 AgentBrain: updating context..."
+
+  # Capture absolute paths BEFORE backgrounding
   REPO_PATH=\$(pwd)
+  GIT_HASH=\$(git rev-parse --short HEAD)
+  TIMESTAMP=\$(date '+%Y-%m-%d %H:%M:%S')
+
   mkdir -p "\$REPO_PATH/.agentbrain"
 
   # Write STARTED entry immediately
-  echo "\$(date '+%Y-%m-%d %H:%M:%S') | Git: \$(git rev-parse --short HEAD) | STARTED" \\
-    >> "\$REPO_PATH/.agentbrain/update.log"
+  echo "\$TIMESTAMP | Git: \$GIT_HASH | STARTED" >> "\$REPO_PATH/.agentbrain/update.log"
 
-  # Run in background with explicit PATH and working directory
-  nohup sh -c "
-    export PATH=\"\$(dirname \$AGENTBRAIN_PATH):\\\$PATH\"
-    cd '\$REPO_PATH'
-    START=\\\$(date +%s)
-    if '\$AGENTBRAIN_PATH' init --silent --no-confirm >> '\$REPO_PATH/.agentbrain/update.log' 2>&1; then
-      END=\\\$(date +%s)
-      echo \"\\\$(date '+%Y-%m-%d %H:%M:%S') | Git: \\\$(git -C '\$REPO_PATH' rev-parse --short HEAD) | SUCCESS | \\\$((END-START))s\" >> '\$REPO_PATH/.agentbrain/update.log'
+  # Run in background with absolute paths captured above
+  (
+    START_TIME=\$(date +%s)
+    if "\$AGENTBRAIN_PATH" init --silent --no-confirm --smart-cache >> "\$REPO_PATH/.agentbrain/update.log" 2>&1; then
+      END_TIME=\$(date +%s)
+      DURATION=\$((END_TIME - START_TIME))
+      echo "\$(date '+%Y-%m-%d %H:%M:%S') | Git: \$GIT_HASH | SUCCESS | \${DURATION}s" >> "\$REPO_PATH/.agentbrain/update.log"
     else
-      echo \"\\\$(date '+%Y-%m-%d %H:%M:%S') | FAILED | agentbrain error\" >> '\$REPO_PATH/.agentbrain/update.log'
+      END_TIME=\$(date +%s)
+      DURATION=\$((END_TIME - START_TIME))
+      echo "\$(date '+%Y-%m-%d %H:%M:%S') | Git: \$GIT_HASH | FAILED | \${DURATION}s" >> "\$REPO_PATH/.agentbrain/update.log"
     fi
-  " > /dev/null 2>&1 &
+  ) &
+  disown
 else
   echo "🧠 AgentBrain: only docs changed, skipping"
 fi

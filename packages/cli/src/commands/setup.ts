@@ -155,7 +155,7 @@ async function runSetup(options: {
 
   // Step 4: Save agent config
   if (selectedAgents.length > 0) {
-    await saveAgentConfig(repoPath, selectedAgents, '1.4.12')
+    await saveAgentConfig(repoPath, selectedAgents, '1.4.13')
   }
 
   // Step 5: Inject into agent files

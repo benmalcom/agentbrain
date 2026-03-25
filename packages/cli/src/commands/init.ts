@@ -35,6 +35,7 @@ export function createInitCommand(): Command {
     .option('--path <path>', 'Repository path', process.cwd())
     .option('--max-files <number>', 'Maximum files to analyze', '100')
     .option('--no-cache', 'Skip cache and regenerate')
+    .option('--smart-cache', 'Reuse file summaries for unchanged files (fast)')
     .option('--dry-run', 'Show what would be generated without actually generating')
     .option('--silent', 'Suppress output (for git hooks)')
     .option('--no-confirm', 'Skip confirmation prompts')
@@ -57,6 +58,7 @@ async function runInit(options: {
   path: string
   maxFiles: string
   cache: boolean
+  smartCache: boolean
   dryRun: boolean
   silent: boolean
   confirm: boolean
@@ -71,6 +73,7 @@ async function runInit(options: {
   const repoPath = resolve(options.path)
   const maxFiles = parseInt(options.maxFiles, 10)
   const useCache = options.cache
+  const smartCache = options.smartCache
   const skipConfirm = !options.confirm
   const skipInject = !options.inject
 
@@ -136,6 +139,7 @@ async function runInit(options: {
     aiConfig,
     maxFiles,
     useCache,
+    smartCache,
     onProgress: (msg) => {
       if (!silent && msg !== lastProgress) {
         if (genSpin) {

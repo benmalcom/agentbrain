@@ -18,7 +18,7 @@ const program = new Command()
 program
   .name('agentbrain')
   .description('Generate smart context docs for coding agents')
-  .version('1.4.12')
+  .version('1.4.13')
 
 // Add commands
 program.addCommand(createSetupCommand())

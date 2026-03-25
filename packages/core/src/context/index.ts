@@ -3,7 +3,28 @@
 import { AIClient } from '../ai/client.js'
 import { scanRepository, readFileContent } from '../crawler/index.js'
 import { getCachedDoc, saveCachedDoc } from '../cache/index.js'
+import { exec } from 'node:child_process'
+import { promisify } from 'node:util'
 import type { GenerateContextOptions, ContextDoc, FileEntry, CostEstimate } from '../types.js'
+
+const execAsync = promisify(exec)
+
+/**
+ * Get list of changed files from git diff since last commit
+ */
+async function getChangedFiles(repoPath: string): Promise<Set<string>> {
+  try {
+    // Get files changed in the last commit
+    const { stdout } = await execAsync('git diff-tree --no-commit-id --name-only -r HEAD', {
+      cwd: repoPath,
+    })
+    const files = stdout.trim().split('\n').filter(Boolean)
+    return new Set(files)
+  } catch {
+    // If git command fails, return empty set (will trigger full regeneration)
+    return new Set()
+  }
+}
 
 /**
  * Extract export statements from code
@@ -472,15 +493,15 @@ Format as markdown with proper syntax highlighting.`
 export async function generateContext(
   options: GenerateContextOptions
 ): Promise<{ docs: ContextDoc[]; totalTokens: number; cost: number }> {
-  const { repoPath, aiConfig, maxFiles = 100, useCache = true, onProgress } = options
+  const { repoPath, aiConfig, maxFiles = 100, useCache = true, smartCache = false, onProgress } = options
 
   const client = new AIClient(aiConfig)
 
   // Scan repository
   const scanResult = await scanRepository(repoPath, { maxFiles, onProgress })
 
-  // Check cache
-  if (useCache) {
+  // Check full cache (git hash match)
+  if (useCache && !smartCache) {
     const cachedContext = await getCachedDoc(repoPath, scanResult.gitHash, 'context')
     const cachedDepMap = await getCachedDoc(repoPath, scanResult.gitHash, 'dependency-map')
     const cachedPatterns = await getCachedDoc(repoPath, scanResult.gitHash, 'patterns')
@@ -495,14 +516,71 @@ export async function generateContext(
     }
   }
 
-  // Summarize files
-  onProgress?.(`Summarizing ${scanResult.relevantFiles.length} files with fast model...`)
-  const { files, totalTokens: summaryTokens } = await summarizeFiles(
-    client,
-    repoPath,
-    scanResult.relevantFiles,
-    onProgress
-  )
+  // Smart cache: reuse file summaries for unchanged files
+  let files: FileEntry[]
+  let summaryTokens = 0
+
+  if (smartCache) {
+    const { loadCache } = await import('../cache/index.js')
+    const existingCache = await loadCache(repoPath)
+
+    if (existingCache?.fileSummaries && existingCache.fileSummaries.length > 0) {
+      onProgress?.('Smart cache: checking for changed files...')
+
+      // Get changed files from git diff
+      const changedFiles = await getChangedFiles(repoPath)
+
+      // Build map of existing summaries
+      const summaryMap = new Map(existingCache.fileSummaries.map(f => [f.path, f.summary]))
+
+      // Separate changed and unchanged files
+      const changedFileEntries: FileEntry[] = []
+      const unchangedFileEntries: FileEntry[] = []
+
+      for (const file of scanResult.relevantFiles) {
+        if (changedFiles.has(file.path) || !summaryMap.has(file.path)) {
+          changedFileEntries.push(file)
+        } else {
+          // Reuse cached summary
+          unchangedFileEntries.push({
+            ...file,
+            summary: summaryMap.get(file.path),
+          })
+        }
+      }
+
+      // Only summarize changed files
+      if (changedFileEntries.length > 0) {
+        onProgress?.(`Smart cache: summarizing ${changedFileEntries.length} changed files (${unchangedFileEntries.length} cached)...`)
+        const { files: newFiles, totalTokens: newTokens } = await summarizeFiles(
+          client,
+          repoPath,
+          changedFileEntries,
+          onProgress
+        )
+
+        // Merge with cached summaries
+        files = [...newFiles, ...unchangedFileEntries]
+        summaryTokens = newTokens
+      } else {
+        onProgress?.('Smart cache: no files changed, using all cached summaries')
+        files = unchangedFileEntries
+        summaryTokens = 0
+      }
+    } else {
+      // No existing summaries, do full scan
+      onProgress?.(`Summarizing ${scanResult.relevantFiles.length} files with fast model...`)
+      const result = await summarizeFiles(client, repoPath, scanResult.relevantFiles, onProgress)
+      files = result.files
+      summaryTokens = result.totalTokens
+    }
+  } else {
+    // Normal mode: summarize all files
+    onProgress?.(`Summarizing ${scanResult.relevantFiles.length} files with fast model...`)
+    const result = await summarizeFiles(client, repoPath, scanResult.relevantFiles, onProgress)
+    files = result.files
+    summaryTokens = result.totalTokens
+  }
 
   // Generate all context docs in parallel with mid model
   onProgress?.('Generating context docs in parallel...')
