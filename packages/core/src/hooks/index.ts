@@ -84,7 +84,7 @@ if echo "\$CHANGED_FILES" | grep -qE '\\.(ts|js|tsx|jsx|py|go|rs|java|c|cpp|h|hp
   # Write STARTED entry immediately
   echo "\$TIMESTAMP | Git: \$GIT_HASH | STARTED" >> "\$REPO_PATH/.agentbrain/update.log"
 
-  # Run in background with absolute paths captured above
+  # Run in background with all output redirected to fully detach from terminal
   (
     START_TIME=\$(date +%s)
     if "\$AGENTBRAIN_PATH" init --silent --no-confirm --smart-cache >> "\$REPO_PATH/.agentbrain/update.log" 2>&1; then
@@ -96,7 +96,7 @@ if echo "\$CHANGED_FILES" | grep -qE '\\.(ts|js|tsx|jsx|py|go|rs|java|c|cpp|h|hp
       DURATION=\$((END_TIME - START_TIME))
       echo "\$(date '+%Y-%m-%d %H:%M:%S') | Git: \$GIT_HASH | FAILED | \${DURATION}s" >> "\$REPO_PATH/.agentbrain/update.log"
     fi
-  ) &
+  ) > /dev/null 2>&1 &
   disown
 else
   echo "🧠 AgentBrain: only docs changed, skipping"
