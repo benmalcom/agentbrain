@@ -120,10 +120,10 @@ describe('runDiagnostics integration', () => {
     const { runDiagnostics } = await import('../index.js')
 
     await mkdir(join(testDir, '.git'))
-    await mkdir(join(testDir, 'agentbrain'), { recursive: true })
-    await writeFile(join(testDir, 'agentbrain', 'context.md'), '# Context')
-    await writeFile(join(testDir, 'agentbrain', 'dependency-map.md'), '# Deps')
-    await writeFile(join(testDir, 'agentbrain', 'patterns.md'), '# Patterns')
+    await mkdir(join(testDir, '.agentbrain'), { recursive: true })
+    await writeFile(join(testDir, '.agentbrain', 'context.md'), '# Context')
+    await writeFile(join(testDir, '.agentbrain', 'dependency-map.md'), '# Deps')
+    await writeFile(join(testDir, '.agentbrain', 'patterns.md'), '# Patterns')
 
     const result = await runDiagnostics(testDir)
 

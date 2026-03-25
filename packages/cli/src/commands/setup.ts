@@ -139,7 +139,7 @@ async function runSetup(options: {
   spin.succeed('Context generated!')
 
   // Write files
-  const outputDir = join(repoPath, 'agentbrain')
+  const outputDir = join(repoPath, '.agentbrain')
   if (!existsSync(outputDir)) {
     await mkdir(outputDir, { recursive: true })
   }
@@ -197,9 +197,9 @@ async function runSetup(options: {
   // Summary
   console.log()
   displayGeneratedFiles([
-    { name: 'agentbrain/context.md', description: 'Full repo intelligence' },
-    { name: 'agentbrain/dependency-map.md', description: 'Service relationships' },
-    { name: 'agentbrain/patterns.md', description: 'Coding patterns' },
+    { name: '.agentbrain/context.md', description: 'Full repo intelligence' },
+    { name: '.agentbrain/dependency-map.md', description: 'Service relationships' },
+    { name: '.agentbrain/patterns.md', description: 'Coding patterns' },
   ])
 
   displayActualCost(result.totalTokens, result.cost)

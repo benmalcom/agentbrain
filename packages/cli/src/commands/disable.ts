@@ -34,7 +34,7 @@ export function createDisableCommand(): Command {
             message: 'What would you like to remove?',
             choices: [
               { name: 'Git hooks (post-commit auto-regeneration)', value: 'hooks', checked: true },
-              { name: 'Generated context files (agentbrain/ directory)', value: 'files' },
+              { name: 'Generated context files (.agentbrain/ directory)', value: 'files' },
               { name: 'Agent config files (CLAUDE.md, .cursorrules, etc.)', value: 'agent-files' },
             ],
           },
@@ -54,7 +54,7 @@ export function createDisableCommand(): Command {
       if (!options.yes) {
         const summary: string[] = []
         if (removeHooks) summary.push('• Remove git hooks')
-        if (removeFiles) summary.push('• Delete agentbrain/ directory')
+        if (removeFiles) summary.push('• Delete .agentbrain/ directory')
         if (removeAgentFiles) summary.push('• Delete agent config files')
 
         console.log(chalk.yellow('\nThis will:'))
@@ -93,16 +93,16 @@ export function createDisableCommand(): Command {
 
       // Remove generated files
       if (removeFiles) {
-        const agentbrainDir = join(repoPath, 'agentbrain')
+        const agentbrainDir = join(repoPath, '.agentbrain')
         if (existsSync(agentbrainDir)) {
           try {
             await rm(agentbrainDir, { recursive: true, force: true })
-            console.log(chalk.green('✓ Removed agentbrain/ directory'))
+            console.log(chalk.green('✓ Removed .agentbrain/ directory'))
           } catch (error) {
-            console.error(chalk.red(`✗ Failed to remove agentbrain/: ${error instanceof Error ? error.message : String(error)}`))
+            console.error(chalk.red(`✗ Failed to remove .agentbrain/: ${error instanceof Error ? error.message : String(error)}`))
           }
         } else {
-          console.log(chalk.gray('  No agentbrain/ directory found'))
+          console.log(chalk.gray('  No .agentbrain/ directory found'))
         }
       }
 

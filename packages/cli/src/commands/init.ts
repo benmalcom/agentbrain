@@ -155,7 +155,7 @@ async function runInit(options: {
   }
 
   // Write files to disk
-  const outputDir = join(repoPath, 'agentbrain')
+  const outputDir = join(repoPath, '.agentbrain')
   if (!existsSync(outputDir)) {
     await mkdir(outputDir, { recursive: true })
   }
@@ -191,9 +191,9 @@ async function runInit(options: {
   // Display summary
   if (!silent) {
     displayGeneratedFiles([
-      { name: 'agentbrain/context.md', description: 'Full repo intelligence' },
-      { name: 'agentbrain/dependency-map.md', description: 'Service relationships' },
-      { name: 'agentbrain/patterns.md', description: 'Coding patterns' },
+      { name: '.agentbrain/context.md', description: 'Full repo intelligence' },
+      { name: '.agentbrain/dependency-map.md', description: 'Service relationships' },
+      { name: '.agentbrain/patterns.md', description: 'Coding patterns' },
     ])
 
     displayActualCost(result.totalTokens, result.cost)

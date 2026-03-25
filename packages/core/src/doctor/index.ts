@@ -130,7 +130,7 @@ async function checkGitRepository(repoPath: string): Promise<DoctorCheck> {
 }
 
 async function checkContextFiles(repoPath: string): Promise<DoctorCheck> {
-  const contextDir = join(repoPath, 'agentbrain')
+  const contextDir = join(repoPath, '.agentbrain')
   const files = ['context.md', 'dependency-map.md', 'patterns.md']
 
   const existing = files.filter((f) => existsSync(join(contextDir, f)))
@@ -355,7 +355,7 @@ async function checkAgentFiles(repoPath: string): Promise<DoctorCheck[]> {
 }
 
 async function checkContextFreshness(repoPath: string): Promise<DoctorCheck> {
-  const contextPath = join(repoPath, 'agentbrain', 'context.md')
+  const contextPath = join(repoPath, '.agentbrain', 'context.md')
 
   if (!existsSync(contextPath)) {
     return {

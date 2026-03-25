@@ -19,6 +19,8 @@ import { saveHandoff, saveHandoffSchema } from './tools/save-handoff.js'
 import type { SaveHandoffInput } from './tools/save-handoff.js'
 import { loadSpecTool, loadSpecSchema } from './tools/load-spec.js'
 import type { LoadSpecInput } from './tools/load-spec.js'
+import { detectDoomLoop, detectDoomLoopSchema } from './tools/detect-doom-loop.js'
+import type { DetectDoomLoopInput } from './tools/detect-doom-loop.js'
 
 // Create MCP server
 const server = new Server(
@@ -41,6 +43,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       loadStandardsSchema,
       loadContextSchema,
       loadSpecSchema,
+      detectDoomLoopSchema,
       saveHandoffSchema,
     ],
   }
@@ -87,6 +90,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: result.slug
                 ? `${result.content}\n\n---\n\n[Loaded spec: ${result.slug}]`
                 : result.content,
+            },
+          ],
+        }
+      }
+
+      case 'detect_doom_loop': {
+        const result = await detectDoomLoop(args as unknown as DetectDoomLoopInput)
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
             },
           ],
         }

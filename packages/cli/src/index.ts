@@ -12,13 +12,14 @@ import { createDisableCommand } from './commands/disable.js'
 import { createDoctorCommand } from './commands/doctor.js'
 import { createStatusCommand } from './commands/status.js'
 import { createSpecCommand } from './commands/spec.js'
+import { createDoomCommand } from './commands/doom.js'
 
 const program = new Command()
 
 program
   .name('agentbrain')
   .description('Generate smart context docs for coding agents')
-  .version('1.4.19')
+  .version('1.4.20')
 
 // Add commands
 program.addCommand(createSetupCommand())
@@ -28,6 +29,7 @@ program.addCommand(createStandardsCommand())
 program.addCommand(createHandoffCommand())
 program.addCommand(createDoctorCommand())
 program.addCommand(createStatusCommand())
+program.addCommand(createDoomCommand())
 program.addCommand(createConfigCommand())
 program.addCommand(createDisableCommand())
 

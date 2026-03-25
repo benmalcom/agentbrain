@@ -56,7 +56,7 @@ export async function saveHandoff(input: SaveHandoffInput): Promise<SaveHandoffO
 
   return {
     content: result.doc.content,
-    filePath: 'agentbrain/handoff.md',
+    filePath: '.agentbrain/handoff.md',
     tokensUsed: result.tokenCount,
   }
 }
@@ -64,7 +64,7 @@ export async function saveHandoff(input: SaveHandoffInput): Promise<SaveHandoffO
 export const saveHandoffSchema = {
   name: 'save_handoff',
   description:
-    'Generate and save handoff document from git diff and recent commits. Creates agentbrain/handoff.md with session summary.',
+    'Generate and save handoff document from git diff and recent commits. Creates .agentbrain/handoff.md with session summary.',
   inputSchema: {
     type: 'object',
     properties: {

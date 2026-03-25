@@ -86,7 +86,7 @@ async function runHandoff(options: {
   }
 
   // Write to disk
-  const outputDir = join(repoPath, 'agentbrain')
+  const outputDir = join(repoPath, '.agentbrain')
   if (!existsSync(outputDir)) {
     await mkdir(outputDir, { recursive: true })
   }
@@ -96,7 +96,7 @@ async function runHandoff(options: {
 
   if (!auto) {
     displayGeneratedFiles([
-      { name: 'agentbrain/handoff.md', description: 'Session handoff document' },
+      { name: '.agentbrain/handoff.md', description: 'Session handoff document' },
     ])
 
     if (result.tokenCount > 0) {
@@ -110,7 +110,7 @@ async function runHandoff(options: {
     success('Handoff document generated!')
 
     console.log('\n📌 Next steps:\n')
-    console.log('  • Share agentbrain/handoff.md with the next developer or session')
+    console.log('  • Share .agentbrain/handoff.md with the next developer or session')
     console.log('  • Reference it at the start of your next session for context')
     console.log()
   }

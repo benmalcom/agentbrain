@@ -48,9 +48,9 @@ function generateInstructions(agent: AgentTarget, gitHash: string): string {
 
 1. **Preferred:** Use the \`load_context\` MCP tool
 2. **Fallback:** Read these files:
-   - @agentbrain/context.md
-   - @agentbrain/patterns.md
-   - @agentbrain/dependency-map.md
+   - @.agentbrain/context.md
+   - @.agentbrain/patterns.md
+   - @.agentbrain/dependency-map.md
 
 These files contain:
 - Complete project architecture and tech stack
@@ -68,9 +68,9 @@ At the start of every session, load repository context:
 
 **Option 1 (Preferred):** Use MCP load_context tool
 **Option 2 (Fallback):** Read these files:
-- agentbrain/context.md
-- agentbrain/patterns.md
-- agentbrain/dependency-map.md
+- .agentbrain/context.md
+- .agentbrain/patterns.md
+- .agentbrain/dependency-map.md
 
 This context includes project architecture, patterns, dependencies, and conventions.
 
@@ -82,9 +82,9 @@ Load at session start:
 
 **Preferred:** MCP load_context tool
 **Fallback:** Read files:
-- agentbrain/context.md
-- agentbrain/patterns.md
-- agentbrain/dependency-map.md
+- .agentbrain/context.md
+- .agentbrain/patterns.md
+- .agentbrain/dependency-map.md
 
 Context includes: architecture, patterns, dependencies, standards.
 

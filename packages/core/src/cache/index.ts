@@ -129,11 +129,11 @@ export async function invalidateCache(repoPath: string): Promise<void> {
 }
 
 /**
- * Ensure .gitignore includes .agentbrain/ and agentbrain/
+ * Ensure .gitignore includes .agentbrain/
  */
 async function ensureGitignore(repoPath: string): Promise<void> {
   const gitignorePath = join(repoPath, '.gitignore')
-  const patterns = ['.agentbrain/', 'agentbrain/']
+  const patterns = ['.agentbrain/']
 
   let content = ''
   let needsUpdate = false
@@ -157,7 +157,7 @@ async function ensureGitignore(repoPath: string): Promise<void> {
 
     // Add comment and patterns if not present
     if (!content.includes('.agentbrain')) {
-      lines.push('', '# AgentBrain cache', '.agentbrain/', 'agentbrain/')
+      lines.push('', '# AgentBrain cache', '.agentbrain/')
     }
 
     // Atomic write: write to temp file then rename

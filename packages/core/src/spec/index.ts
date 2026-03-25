@@ -114,14 +114,14 @@ Output format:
 }
 
 /**
- * Save spec file to agentbrain/specs/
+ * Save spec file to .agentbrain/specs/
  */
 export async function saveSpec(
   repoPath: string,
   slug: string,
   content: string
 ): Promise<string> {
-  const specsDir = join(repoPath, 'agentbrain', 'specs')
+  const specsDir = join(repoPath, '.agentbrain', 'specs')
 
   if (!existsSync(specsDir)) {
     await mkdir(specsDir, { recursive: true })
@@ -143,8 +143,8 @@ export async function injectSpecReference(
   const config = await loadAgentConfig(repoPath)
   const agents: AgentTarget[] = config?.selectedAgents || ['claude-code']
 
-  const specPath = `agentbrain/specs/${slug}.md`
-  const reference = `\n\n---\n\n**Active Spec:** Read \`${specPath}\` before implementing this feature.\n`
+  const specPath = `.agentbrain/specs/${slug}.md`
+  const reference = `---\n\n**Active Spec:** Read \`${specPath}\` before implementing this feature.\n`
 
   for (const agent of agents) {
     const agentFilePath = join(repoPath, AGENT_FILE_PATHS[agent])
@@ -156,7 +156,7 @@ export async function injectSpecReference(
 
         // Append spec reference if not already present
         if (!content.includes(`**Active Spec:** Read \`${specPath}\``)) {
-          const separator = content.trim().endsWith('\n') ? '\n' : '\n\n'
+          const separator = content.endsWith('\n') ? '\n' : '\n\n'
           await writeFile(agentFilePath, content + separator + reference, 'utf-8')
         }
       } catch {
@@ -170,7 +170,7 @@ export async function injectSpecReference(
  * List all available specs
  */
 export async function listSpecs(repoPath: string): Promise<string[]> {
-  const specsDir = join(repoPath, 'agentbrain', 'specs')
+  const specsDir = join(repoPath, '.agentbrain', 'specs')
 
   if (!existsSync(specsDir)) {
     return []
@@ -184,7 +184,7 @@ export async function listSpecs(repoPath: string): Promise<string[]> {
  * Load a spec file by slug
  */
 export async function loadSpec(repoPath: string, slug: string): Promise<string | null> {
-  const filePath = join(repoPath, 'agentbrain', 'specs', `${slug}.md`)
+  const filePath = join(repoPath, '.agentbrain', 'specs', `${slug}.md`)
 
   if (!existsSync(filePath)) {
     return null

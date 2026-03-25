@@ -213,9 +213,9 @@ More rules
     await injectIntoAgentFile(testDir, 'claude-code', 'hash')
 
     const content = await readFile(join(testDir, 'CLAUDE.md'), 'utf-8')
-    expect(content).toContain('agentbrain/context.md')
-    expect(content).toContain('agentbrain/patterns.md')
-    expect(content).toContain('agentbrain/dependency-map.md')
+    expect(content).toContain('.agentbrain/context.md')
+    expect(content).toContain('.agentbrain/patterns.md')
+    expect(content).toContain('.agentbrain/dependency-map.md')
   })
 
   it('includes git hash in injected content', async () => {
