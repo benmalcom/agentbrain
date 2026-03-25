@@ -43,6 +43,10 @@ export { generateContext, estimateContextCost } from './context/index.js'
 // Standards generation
 export { generateStandards } from './standards/index.js'
 
+// Spec generation
+export { createSpec, generateSpec, saveSpec, loadSpec, listSpecs, injectSpecReference } from './spec/index.js'
+export type { SpecAnswers, GenerateSpecResult } from './spec/index.js'
+
 // Handoff generation
 export { generateHandoff } from './handoff/index.js'
 

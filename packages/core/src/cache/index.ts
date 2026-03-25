@@ -1,7 +1,7 @@
 // Git-hash based cache invalidation
 
 import { join } from 'node:path'
-import { readFile, writeFile, mkdir } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, rename } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import type { CacheEntry, ContextDoc } from '../types.js'
 
@@ -51,7 +51,10 @@ export async function saveCache(repoPath: string, cache: CacheEntry): Promise<vo
     await mkdir(cacheDir, { recursive: true })
   }
 
-  await writeFile(cachePath, JSON.stringify(cache, null, 2), 'utf-8')
+  // Atomic write: write to temp file then rename
+  const tmpPath = cachePath + '.tmp'
+  await writeFile(tmpPath, JSON.stringify(cache, null, 2), 'utf-8')
+  await rename(tmpPath, cachePath)
 
   // Also ensure .gitignore includes .agentbrain
   await ensureGitignore(repoPath)
@@ -157,6 +160,9 @@ async function ensureGitignore(repoPath: string): Promise<void> {
       lines.push('', '# AgentBrain cache', '.agentbrain/', 'agentbrain/')
     }
 
-    await writeFile(gitignorePath, lines.join('\n'), 'utf-8')
+    // Atomic write: write to temp file then rename
+    const tmpPath = gitignorePath + '.tmp'
+    await writeFile(tmpPath, lines.join('\n'), 'utf-8')
+    await rename(tmpPath, gitignorePath)
   }
 }

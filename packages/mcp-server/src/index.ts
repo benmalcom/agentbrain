@@ -17,6 +17,8 @@ import { loadContext, loadContextSchema } from './tools/load-context.js'
 import type { LoadContextInput } from './tools/load-context.js'
 import { saveHandoff, saveHandoffSchema } from './tools/save-handoff.js'
 import type { SaveHandoffInput } from './tools/save-handoff.js'
+import { loadSpecTool, loadSpecSchema } from './tools/load-spec.js'
+import type { LoadSpecInput } from './tools/load-spec.js'
 
 // Create MCP server
 const server = new Server(
@@ -38,6 +40,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       scanRepoSchema,
       loadStandardsSchema,
       loadContextSchema,
+      loadSpecSchema,
       saveHandoffSchema,
     ],
   }
@@ -70,6 +73,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: `${result.content}\n\n---\n\n[Loaded from ${result.fromCache ? 'cache' : 'fresh generation'}, tokens used: ${result.tokensUsed}]`,
+            },
+          ],
+        }
+      }
+
+      case 'load_spec': {
+        const result = await loadSpecTool(args as unknown as LoadSpecInput)
+        return {
+          content: [
+            {
+              type: 'text',
+              text: result.slug
+                ? `${result.content}\n\n---\n\n[Loaded spec: ${result.slug}]`
+                : result.content,
             },
           ],
         }

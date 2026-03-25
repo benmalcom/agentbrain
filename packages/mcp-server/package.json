@@ -1,6 +1,6 @@
 {
   "name": "@agentbrain/mcp-server",
-  "version": "1.4.13",
+  "version": "1.4.19",
   "description": "Model Context Protocol server for AgentBrain - connect Claude, Cursor, and Windsurf to repository intelligence",
   "type": "module",
   "main": "./dist/index.js",

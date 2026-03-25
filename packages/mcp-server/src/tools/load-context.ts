@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { homedir } from 'node:os'
-import { loadAIConfig, generateContext, getCachedDoc, getGitHash } from '@agentbrain/core'
+import { loadAIConfig, generateContext, getCachedDoc, getGitHash, loadCache } from '@agentbrain/core'
 
 /**
  * Expand path: handles ~, relative paths, etc.
@@ -25,6 +25,10 @@ export interface LoadContextOutput {
   content: string
   fromCache: boolean
   tokensUsed: number
+  stale?: boolean
+  cached_sha?: string
+  current_sha?: string
+  message?: string
 }
 
 export async function loadContext(input: LoadContextInput): Promise<LoadContextOutput> {
@@ -34,6 +38,9 @@ export async function loadContext(input: LoadContextInput): Promise<LoadContextO
   const expandedPath = expandPath(repo_path)
 
   const contextDir = join(expandedPath, 'agentbrain')
+
+  // Get current git hash for staleness check
+  const currentGitHash = await getGitHash(expandedPath)
 
   // Try to load from disk first
   const contextPath = join(contextDir, 'context.md')
@@ -50,29 +57,48 @@ export async function loadContext(input: LoadContextInput): Promise<LoadContextO
 
     const combined = `# Repository Context\n\n${context}\n\n---\n\n# Dependency Map\n\n${depMap}\n\n---\n\n# Patterns\n\n${patterns}`
 
+    // Check if cached git hash matches current HEAD
+    const cache = await loadCache(expandedPath)
+    const isStale = cache && cache.gitHash !== currentGitHash
+
     return {
       content: combined,
       fromCache: true,
       tokensUsed: 0,
+      ...(isStale && {
+        stale: true,
+        cached_sha: cache.gitHash,
+        current_sha: currentGitHash,
+        message: 'Context may be outdated. Run agentbrain init to refresh.',
+      }),
     }
   }
 
   // Need to generate - requires API key
   const aiConfig = await loadAIConfig()
-  const gitHash = await getGitHash(expandedPath)
 
-  // Check cache validity
-  const cachedContext = await getCachedDoc(expandedPath, gitHash, 'context')
-  const cachedDepMap = await getCachedDoc(expandedPath, gitHash, 'dependency-map')
-  const cachedPatterns = await getCachedDoc(expandedPath, gitHash, 'patterns')
+  // Check cache validity (using currentGitHash from above)
+  const cachedContext = await getCachedDoc(expandedPath, currentGitHash, 'context')
+  const cachedDepMap = await getCachedDoc(expandedPath, currentGitHash, 'dependency-map')
+  const cachedPatterns = await getCachedDoc(expandedPath, currentGitHash, 'patterns')
 
   if (!force_refresh && cachedContext && cachedDepMap && cachedPatterns) {
     const combined = `# Repository Context\n\n${cachedContext.content}\n\n---\n\n# Dependency Map\n\n${cachedDepMap.content}\n\n---\n\n# Patterns\n\n${cachedPatterns.content}`
+
+    // Check if cached git hash matches current HEAD
+    const cache = await loadCache(expandedPath)
+    const isStale = cache && cache.gitHash !== currentGitHash
 
     return {
       content: combined,
       fromCache: true,
       tokensUsed: 0,
+      ...(isStale && {
+        stale: true,
+        cached_sha: cache.gitHash,
+        current_sha: currentGitHash,
+        message: 'Context may be outdated. Run agentbrain init to refresh.',
+      }),
     }
   }
 
@@ -87,6 +113,7 @@ export async function loadContext(input: LoadContextInput): Promise<LoadContextO
     .map((doc) => `# ${doc.type}\n\n${doc.content}`)
     .join('\n\n---\n\n')
 
+  // Newly generated content is never stale
   return {
     content: combined,
     fromCache: false,
