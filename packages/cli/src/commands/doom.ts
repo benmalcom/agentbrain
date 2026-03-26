@@ -10,14 +10,24 @@ export function createDoomCommand(): Command {
     .option('--path <path>', 'Repository path', process.cwd())
     .option('--commits <number>', 'Number of commits to analyze', '10')
     .option('--threshold <number>', 'Threshold for doom loop detection', '4')
+    .option('--json', 'Output results as JSON')
     .action(async (options) => {
-      const { path, commits, threshold } = options
+      const { path, commits, threshold, json } = options
 
-      console.log(chalk.blue.bold('\n🧠 AgentBrain\n'))
+      if (!json) {
+        console.log(chalk.blue.bold('\n🧠 AgentBrain\n'))
+      }
 
       try {
         const result = await analyzeDoomLoop(path, parseInt(commits), parseInt(threshold))
 
+        // JSON output mode
+        if (json) {
+          console.log(JSON.stringify(result, null, 2))
+          return
+        }
+
+        // Human-readable output mode
         if (result.detected) {
           console.log(chalk.yellow.bold('⚠ Possible doom loop detected\n'))
           console.log(
@@ -45,12 +55,16 @@ export function createDoomCommand(): Command {
           )
         }
       } catch (error) {
-        if (error instanceof Error) {
-          if (error.message.includes('Not a git repository')) {
-            console.error(chalk.red('✗ Error: Not a git repository'))
-            console.error(chalk.gray('Run this command from a git repository\n'))
-          } else {
-            console.error(chalk.red('✗ Error:'), error.message, '\n')
+        if (json) {
+          console.error(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }))
+        } else {
+          if (error instanceof Error) {
+            if (error.message.includes('Not a git repository')) {
+              console.error(chalk.red('✗ Error: Not a git repository'))
+              console.error(chalk.gray('Run this command from a git repository\n'))
+            } else {
+              console.error(chalk.red('✗ Error:'), error.message, '\n')
+            }
           }
         }
         process.exit(1)

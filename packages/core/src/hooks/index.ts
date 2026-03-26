@@ -1,8 +1,9 @@
 // Git hooks installation and management
 
-import { writeFile, chmod } from 'node:fs/promises'
+import { writeFile, chmod, readFile, appendFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { execSync } from 'node:child_process'
 
 /**
  * Check if we're in a git repository
@@ -14,30 +15,41 @@ export function isGitRepository(repoPath: string): boolean {
 /**
  * Install post-commit hook for smart auto-regeneration
  * Only regenerates context when source files change (not docs/config)
+ * Supports Husky and custom git hooksPath
  */
 export async function installPostCommitHook(repoPath: string): Promise<void> {
   if (!isGitRepository(repoPath)) {
     throw new Error('Not a git repository')
   }
 
-  const hookPath = join(repoPath, '.git', 'hooks', 'post-commit')
+  // Detect hook installation location (priority: Husky > custom hooksPath > .git/hooks)
+  let hookPath: string
+  let isHusky = false
 
-  // Check if hook already exists
-  let existingContent = ''
-  if (existsSync(hookPath)) {
-    const fs = await import('node:fs/promises')
-    existingContent = await fs.readFile(hookPath, 'utf-8')
-
-    // Don't add if already present
-    if (existingContent.includes('AgentBrain: Smart auto-regeneration')) {
-      return
+  // Check for Husky
+  const huskyDir = join(repoPath, '.husky')
+  if (existsSync(huskyDir)) {
+    hookPath = join(huskyDir, 'post-commit')
+    isHusky = true
+  } else {
+    // Check for custom hooksPath
+    try {
+      const customHooksPath = execSync('git config core.hooksPath', { cwd: repoPath })
+        .toString()
+        .trim()
+      if (customHooksPath) {
+        hookPath = join(repoPath, customHooksPath, 'post-commit')
+      } else {
+        hookPath = join(repoPath, '.git', 'hooks', 'post-commit')
+      }
+    } catch {
+      hookPath = join(repoPath, '.git', 'hooks', 'post-commit')
     }
   }
 
-  const hookContent = `#!/bin/sh
+  // AgentBrain hook content
+  const agentbrainHookContent = `#!/bin/sh
 # AgentBrain: Smart auto-regeneration after commits
-
-${existingContent}
 
 # Source nvm to get correct PATH on macOS
 export NVM_DIR="\$HOME/.nvm"
@@ -84,20 +96,42 @@ if echo "\$CHANGED_FILES" | grep -qE '\\.(ts|js|tsx|jsx|py|go|rs|java|c|cpp|h|hp
   # Write STARTED entry immediately
   echo "\$TIMESTAMP | Git: \$GIT_HASH | STARTED" >> "\$REPO_PATH/.agentbrain/update.log"
 
-  # Run in background with all output redirected to fully detach from terminal
-  (
-    START_TIME=\$(date +%s)
-    if "\$AGENTBRAIN_PATH" init --silent --no-confirm --smart-cache >> "\$REPO_PATH/.agentbrain/update.log" 2>&1; then
-      END_TIME=\$(date +%s)
-      DURATION=\$((END_TIME - START_TIME))
-      echo "\$(date '+%Y-%m-%d %H:%M:%S') | Git: \$GIT_HASH | SUCCESS | \${DURATION}s" >> "\$REPO_PATH/.agentbrain/update.log"
+  # Context update (background, non-blocking)
+  nohup sh -c "
+    START_TIME=\\\$(date +%s)
+    if \$AGENTBRAIN_PATH init --silent --no-confirm >> \$REPO_PATH/.agentbrain/update.log 2>&1; then
+      END_TIME=\\\$(date +%s)
+      DURATION=\\\$((END_TIME - START_TIME))
+      echo \\\"\\\$(date '+%Y-%m-%d %H:%M:%S') | Git: \$GIT_HASH | SUCCESS | \\\${DURATION}s\\\" >> \$REPO_PATH/.agentbrain/update.log
     else
-      END_TIME=\$(date +%s)
-      DURATION=\$((END_TIME - START_TIME))
-      echo "\$(date '+%Y-%m-%d %H:%M:%S') | Git: \$GIT_HASH | FAILED | \${DURATION}s" >> "\$REPO_PATH/.agentbrain/update.log"
+      END_TIME=\\\$(date +%s)
+      DURATION=\\\$((END_TIME - START_TIME))
+      echo \\\"\\\$(date '+%Y-%m-%d %H:%M:%S') | Git: \$GIT_HASH | FAILED | \\\${DURATION}s\\\" >> \$REPO_PATH/.agentbrain/update.log
     fi
-  ) > /dev/null 2>&1 &
-  disown
+  " > /dev/null 2>&1 &
+
+  # Doom loop detection (background, non-blocking)
+  nohup sh -c "
+    sleep 0.5
+    DOOM_RESULT=\\\$(\$AGENTBRAIN_PATH doom --json --path \$REPO_PATH 2>/dev/null)
+    if echo \\\"\\\$DOOM_RESULT\\\" | grep -q detected.*true; then
+      echo
+      echo \\\"⚠  AgentBrain: possible doom loop detected\\\"
+      echo
+      FILES=\\\$(echo \\\"\\\$DOOM_RESULT\\\" | grep -o \\\"path\\\":\\\"[^\\\"]*\\\" | sed s/\\\"path\\\":\\\"//\\;s/\\\"//)
+      if [ ! -z \\\"\\\$FILES\\\" ]; then
+        echo \\\"These files are being modified repeatedly:\\\"
+        echo \\\"\\\$FILES\\\" | while IFS= read -r file; do
+          echo \\\"  - \\\$file\\\"
+        done
+        echo
+        echo \\\"Suggestions:\\\"
+        echo \\\"  → Stop coding. Investigate root cause first.\\\"
+        echo \\\"  → Run: agentbrain spec to plan your fix\\\"
+        echo
+      fi
+    fi
+  " > /dev/null 2>&1 &
 else
   echo "🧠 AgentBrain: only docs changed, skipping"
 fi
@@ -105,7 +139,9 @@ fi
 exit 0
 `
 
-  await writeFile(hookPath, hookContent, 'utf-8')
+  // Install hook - always overwrite to ensure latest version
+  // This ensures broken hooks get fixed on reinstall
+  await writeFile(hookPath, agentbrainHookContent, 'utf-8')
   await chmod(hookPath, 0o755) // Make executable
 }
 
@@ -152,7 +188,26 @@ export async function uninstallPostCommitHook(repoPath: string): Promise<boolean
     return false
   }
 
-  const hookPath = join(repoPath, '.git', 'hooks', 'post-commit')
+  // Detect hook location (same logic as install)
+  let hookPath: string
+  const huskyDir = join(repoPath, '.husky')
+
+  if (existsSync(huskyDir)) {
+    hookPath = join(huskyDir, 'post-commit')
+  } else {
+    try {
+      const customHooksPath = execSync('git config core.hooksPath', { cwd: repoPath })
+        .toString()
+        .trim()
+      if (customHooksPath) {
+        hookPath = join(repoPath, customHooksPath, 'post-commit')
+      } else {
+        hookPath = join(repoPath, '.git', 'hooks', 'post-commit')
+      }
+    } catch {
+      hookPath = join(repoPath, '.git', 'hooks', 'post-commit')
+    }
+  }
 
   if (!existsSync(hookPath)) {
     return false
@@ -160,6 +215,12 @@ export async function uninstallPostCommitHook(repoPath: string): Promise<boolean
 
   const fs = await import('node:fs/promises')
   const content = await fs.readFile(hookPath, 'utf-8')
+
+  // If entire file is AgentBrain content, just delete it
+  if (content.includes('AgentBrain: Smart auto-regeneration') && !content.includes('husky')) {
+    await fs.unlink(hookPath)
+    return true
+  }
 
   // Remove AgentBrain section
   const lines = content.split('\n')
@@ -182,7 +243,7 @@ export async function uninstallPostCommitHook(repoPath: string): Promise<boolean
 
   const newContent = filteredLines.join('\n').trim()
 
-  if (newContent === '' || newContent === '#!/bin/sh') {
+  if (newContent === '' || newContent === '#!/bin/sh' || newContent === '#!/usr/bin/env sh') {
     // Hook is now empty, delete it
     await fs.unlink(hookPath)
   } else {
