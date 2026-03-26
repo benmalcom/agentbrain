@@ -46,7 +46,7 @@ export async function loadContext(input: LoadContextInput): Promise<LoadContextO
   // Expand path to handle ~, relative paths, etc.
   const expandedPath = expandPath(repo_path)
 
-  const contextDir = join(expandedPath, 'agentbrain')
+  const contextDir = join(expandedPath, '.agentbrain')
 
   // Get current git hash for staleness check
   const currentGitHash = await getGitHash(expandedPath)
@@ -87,9 +87,6 @@ export async function loadContext(input: LoadContextInput): Promise<LoadContextO
     }
   }
 
-  // Need to generate - requires API key
-  const aiConfig = await loadAIConfig()
-
   // Check cache validity (using currentGitHash from above)
   const cachedContext = await getCachedDoc(expandedPath, currentGitHash, 'context')
   const cachedDepMap = await getCachedDoc(expandedPath, currentGitHash, 'dependency-map')
@@ -118,6 +115,9 @@ export async function loadContext(input: LoadContextInput): Promise<LoadContextO
       doom_warning: doomWarning,
     }
   }
+
+  // Need to generate - requires API key (only loaded if we reach this point)
+  const aiConfig = await loadAIConfig()
 
   // Generate new context
   const result = await generateContext({

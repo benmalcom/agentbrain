@@ -56,7 +56,7 @@ export async function saveHandoff(input: SaveHandoffInput): Promise<SaveHandoffO
   }
 
   // Write to disk
-  const outputDir = join(expandedPath, 'agentbrain')
+  const outputDir = join(expandedPath, '.agentbrain')
   if (!existsSync(outputDir)) {
     await mkdir(outputDir, { recursive: true })
   }
