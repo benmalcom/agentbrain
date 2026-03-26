@@ -1,14 +1,67 @@
-// create-spec.ts - MCP tool to create task specifications
+// create-spec.ts - MCP tool to save spec content (no AI generation)
 
-import { z } from 'zod'
-import { createSpec as coreCreateSpec } from '@agentbrain/core'
-import { loadAIConfig } from '@agentbrain/core'
-import { resolve } from 'node:path'
+import { writeFile, mkdir } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { join, resolve } from 'node:path'
+import { homedir } from 'node:os'
+
+/**
+ * Expand path: handles ~, relative paths, etc.
+ */
+function expandPath(path: string): string {
+  if (path.startsWith('~/') || path === '~') {
+    return path.replace('~', homedir())
+  }
+  return resolve(path)
+}
+
+/**
+ * Convert task to slug format
+ */
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+export interface CreateSpecInput {
+  repoPath: string
+  task: string
+  content: string
+}
+
+export interface CreateSpecOutput {
+  specPath: string
+  slug: string
+}
+
+export async function createSpecTool(input: CreateSpecInput): Promise<CreateSpecOutput> {
+  const { repoPath, task, content } = input
+
+  const expandedPath = expandPath(repoPath)
+  const slug = slugify(task)
+
+  // Ensure specs directory exists
+  const specsDir = join(expandedPath, '.agentbrain', 'specs')
+  if (!existsSync(specsDir)) {
+    await mkdir(specsDir, { recursive: true })
+  }
+
+  // Write spec file
+  const specPath = join(specsDir, `${slug}.md`)
+  await writeFile(specPath, content, 'utf-8')
+
+  return {
+    specPath: `.agentbrain/specs/${slug}.md`,
+    slug,
+  }
+}
 
 export const createSpecSchema = {
   name: 'create_spec',
   description:
-    'Create a task specification with AI-guided structure. Generates a spec file with problem statement, scope, acceptance criteria, and implementation notes based on repository context.',
+    'Save a task specification to disk. The agent provides the spec content (already written), and this tool saves it to .agentbrain/specs/<slug>.md. No AI calls - pure file write.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -18,84 +71,13 @@ export const createSpecSchema = {
       },
       task: {
         type: 'string',
-        description:
-          'Brief task description (e.g., "add OAuth authentication")',
+        description: 'Task name (will be slugified for filename)',
       },
-      problem: {
+      content: {
         type: 'string',
-        description: 'What problem does this solve? (1-2 sentences)',
-      },
-      approach: {
-        type: 'string',
-        description:
-          'Your implementation approach or "not sure yet" if unknown',
-      },
-      outOfScope: {
-        type: 'string',
-        description: 'What should NOT be touched or changed',
-      },
-      doneCriteria: {
-        type: 'string',
-        description: 'What does "done" look like? (acceptance criteria)',
-      },
-      risks: {
-        type: 'string',
-        description: 'Any edge cases or risks to consider',
-      },
-      inject: {
-        type: 'boolean',
-        description:
-          'Inject spec reference into agent files (CLAUDE.md, .cursorrules, etc.) [default: true]',
+        description: 'Full spec content in markdown format (written by agent)',
       },
     },
-    required: ['repoPath', 'task', 'problem', 'doneCriteria'],
+    required: ['repoPath', 'task', 'content'],
   },
-} as const
-
-const inputSchema = z.object({
-  repoPath: z.string(),
-  task: z.string(),
-  problem: z.string(),
-  approach: z.string().optional(),
-  outOfScope: z.string().optional(),
-  doneCriteria: z.string(),
-  risks: z.string().optional(),
-  inject: z.boolean().optional().default(true),
-})
-
-export type CreateSpecInput = z.infer<typeof inputSchema>
-
-export async function createSpecTool(input: CreateSpecInput) {
-  // Validate input
-  const validated = inputSchema.parse(input)
-  const repoPath = resolve(validated.repoPath)
-
-  // Load AI config (will use env vars or stored config)
-  const aiConfig = await loadAIConfig()
-
-  // Build answers object for spec generation
-  const answers = {
-    problem: validated.problem,
-    approach: validated.approach || 'not sure yet',
-    outOfScope: validated.outOfScope || 'none specified',
-    doneCriteria: validated.doneCriteria,
-    risks: validated.risks || 'none specified',
-  }
-
-  // Use core createSpec function (handles everything: generate, save, inject)
-  const result = await coreCreateSpec(
-    validated.task,
-    answers,
-    repoPath,
-    aiConfig
-  )
-
-  return {
-    specPath: result.filePath.replace(repoPath, '').slice(1), // Relative path
-    slug: result.slug,
-    content: result.content,
-    tokensUsed: result.tokensUsed,
-    cost: result.cost,
-    injected: true, // coreCreateSpec always injects
-  }
 }

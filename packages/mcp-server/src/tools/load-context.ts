@@ -145,7 +145,7 @@ export async function loadContext(input: LoadContextInput): Promise<LoadContextO
 export const loadContextSchema = {
   name: 'load_context',
   description:
-    'Load combined context documentation (context.md + dependency-map.md + patterns.md). Cached by git hash - repeat calls are free.',
+    'Load combined context documentation (context.md + dependency-map.md + patterns.md). Reads from disk if files exist (no API key needed). Only generates new context if files missing (requires API key). Cached by git hash - repeat calls are free.',
   inputSchema: {
     type: 'object',
     properties: {

@@ -1,10 +1,9 @@
-// MCP tool: save_handoff - save handoff at session end
+// save-handoff.ts - MCP tool to save handoff content (no AI generation)
 
 import { writeFile, mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { homedir } from 'node:os'
-import { loadAIConfig, generateHandoff, getPendingDoomForMCP } from '@agentbrain/core'
 
 /**
  * Expand path: handles ~, relative paths, etc.
@@ -18,63 +17,37 @@ function expandPath(path: string): string {
 
 export interface SaveHandoffInput {
   repo_path: string
-  goal?: string
-  commit_count?: number
+  content: string
 }
 
 export interface SaveHandoffOutput {
-  content: string
   filePath: string
-  tokensUsed: number
 }
 
 export async function saveHandoff(input: SaveHandoffInput): Promise<SaveHandoffOutput> {
-  const { repo_path, goal, commit_count = 5 } = input
+  const { repo_path, content } = input
 
-  // Expand path to handle ~, relative paths, etc.
   const expandedPath = expandPath(repo_path)
 
-  // Load AI config
-  const aiConfig = await loadAIConfig()
-
-  // Generate handoff
-  const result = await generateHandoff({
-    repoPath: expandedPath,
-    aiConfig,
-    goal,
-    commitCount: commit_count,
-  })
-
-  // Check for doom loop warnings
-  const doomWarning = await getPendingDoomForMCP(expandedPath)
-
-  // Append doom warning section if detected
-  let finalContent = result.doc.content
-  if (doomWarning && doomWarning.detected) {
-    const doomSection = `\n\n## ⚠ Doom Loop Warning\n\nThe following files were modified repeatedly before this handoff. Investigate before continuing:\n${doomWarning.files.map((f) => `- ${f}`).join('\n')}\n`
-    finalContent = result.doc.content + doomSection
-  }
-
-  // Write to disk
+  // Ensure .agentbrain directory exists
   const outputDir = join(expandedPath, '.agentbrain')
   if (!existsSync(outputDir)) {
     await mkdir(outputDir, { recursive: true })
   }
 
+  // Write handoff file
   const filePath = join(outputDir, 'handoff.md')
-  await writeFile(filePath, finalContent, 'utf-8')
+  await writeFile(filePath, content, 'utf-8')
 
   return {
-    content: finalContent,
     filePath: '.agentbrain/handoff.md',
-    tokensUsed: result.tokenCount,
   }
 }
 
 export const saveHandoffSchema = {
   name: 'save_handoff',
   description:
-    'Generate and save handoff document from git diff and recent commits. Creates .agentbrain/handoff.md with session summary.',
+    'Save a session handoff document to disk. The agent provides the handoff content (already written), and this tool saves it to .agentbrain/handoff.md. No AI calls - pure file write.',
   inputSchema: {
     type: 'object',
     properties: {
@@ -82,15 +55,11 @@ export const saveHandoffSchema = {
         type: 'string',
         description: 'Absolute path to the repository',
       },
-      goal: {
+      content: {
         type: 'string',
-        description: 'Optional session goal or objective to include in handoff',
-      },
-      commit_count: {
-        type: 'number',
-        description: 'Number of recent commits to include in the handoff (default: 5)',
+        description: 'Full handoff content in markdown format (written by agent)',
       },
     },
-    required: ['repo_path'],
+    required: ['repo_path', 'content'],
   },
 }
