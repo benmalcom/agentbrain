@@ -3,6 +3,7 @@
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
 import { existsSync } from 'node:fs'
+import { readFile, appendFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 const execAsync = promisify(exec)
@@ -108,4 +109,65 @@ export async function analyzeDoomLoop(
     commitsAnalyzed: commitCount,
     files: doomFiles,
   }
+}
+
+/**
+ * Check for pending doom warnings in update.log
+ * Returns warning message if doom detected and not yet shown
+ */
+export async function checkPendingDoomWarning(repoPath: string): Promise<string | null> {
+  const updateLogPath = join(repoPath, '.agentbrain', 'update.log')
+
+  // Check if update log exists
+  if (!existsSync(updateLogPath)) {
+    return null
+  }
+
+  // Get current git hash
+  let currentHash: string
+  try {
+    const { stdout } = await execAsync('git rev-parse --short HEAD', { cwd: repoPath })
+    currentHash = stdout.trim()
+  } catch {
+    return null // Not a git repo or no commits
+  }
+
+  // Read update log
+  const logContent = await readFile(updateLogPath, 'utf-8')
+  const lines = logContent.split('\n')
+
+  // Check if already shown for this hash
+  const doomShownPattern = `DOOM_SHOWN | Git: ${currentHash}`
+  if (lines.some((line) => line.includes(doomShownPattern))) {
+    return null // Already shown
+  }
+
+  // Find DOOM entries for current hash
+  const doomPattern = `| Git: ${currentHash} | DOOM | detected`
+  const hasDoom = lines.some((line) => line.includes(doomPattern))
+
+  if (!hasDoom) {
+    return null // No doom detected
+  }
+
+  // Mark as shown
+  await appendFile(updateLogPath, `DOOM_SHOWN | Git: ${currentHash}\n`, 'utf-8')
+
+  // Run live doom analysis to get current file details
+  const result = await analyzeDoomLoop(repoPath)
+
+  if (!result.detected || result.files.length === 0) {
+    return null // False alarm or already resolved
+  }
+
+  // Format warning message with file details
+  const fileList = result.files
+    .map((f) => `  ${f.path} (${f.commitCount} times · ${f.percentage}%)`)
+    .join('\n')
+
+  return `⚠ AgentBrain: doom loop detected on last commit
+${fileList}
+→ Stop coding. Investigate root cause first.
+→ Run: agentbrain spec "fix [problem description]"
+`
 }

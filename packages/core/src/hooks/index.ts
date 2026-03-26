@@ -96,40 +96,32 @@ if echo "\$CHANGED_FILES" | grep -qE '\\.(ts|js|tsx|jsx|py|go|rs|java|c|cpp|h|hp
   # Write STARTED entry immediately
   echo "\$TIMESTAMP | Git: \$GIT_HASH | STARTED" >> "\$REPO_PATH/.agentbrain/update.log"
 
+  # Capture variables for background processes
+  AGENTBRAIN_BIN=\$AGENTBRAIN_PATH
+  LOG_FILE=\$REPO_PATH/.agentbrain/update.log
+  CURRENT_HASH=\$GIT_HASH
+  CURRENT_REPO=\$REPO_PATH
+
   # Context update (background, non-blocking)
   nohup sh -c "
     START_TIME=\\\$(date +%s)
-    if \$AGENTBRAIN_PATH init --silent --no-confirm >> \$REPO_PATH/.agentbrain/update.log 2>&1; then
+    if $AGENTBRAIN_BIN init --silent --no-confirm >> $LOG_FILE 2>&1; then
       END_TIME=\\\$(date +%s)
       DURATION=\\\$((END_TIME - START_TIME))
-      echo \\\"\\\$(date '+%Y-%m-%d %H:%M:%S') | Git: \$GIT_HASH | SUCCESS | \\\${DURATION}s\\\" >> \$REPO_PATH/.agentbrain/update.log
+      echo \\\"\\\$(date '+%Y-%m-%d %H:%M:%S') | Git: $CURRENT_HASH | SUCCESS | \\\${DURATION}s\\\" >> $LOG_FILE
     else
       END_TIME=\\\$(date +%s)
       DURATION=\\\$((END_TIME - START_TIME))
-      echo \\\"\\\$(date '+%Y-%m-%d %H:%M:%S') | Git: \$GIT_HASH | FAILED | \\\${DURATION}s\\\" >> \$REPO_PATH/.agentbrain/update.log
+      echo \\\"\\\$(date '+%Y-%m-%d %H:%M:%S') | Git: $CURRENT_HASH | FAILED | \\\${DURATION}s\\\" >> $LOG_FILE
     fi
   " > /dev/null 2>&1 &
 
   # Doom loop detection (background, non-blocking)
   nohup sh -c "
-    sleep 0.5
-    DOOM_RESULT=\\\$(\$AGENTBRAIN_PATH doom --json --path \$REPO_PATH 2>/dev/null)
-    if echo \\\"\\\$DOOM_RESULT\\\" | grep -q detected.*true; then
-      echo
-      echo \\\"⚠  AgentBrain: possible doom loop detected\\\"
-      echo
-      FILES=\\\$(echo \\\"\\\$DOOM_RESULT\\\" | grep -o \\\"path\\\":\\\"[^\\\"]*\\\" | sed s/\\\"path\\\":\\\"//\\;s/\\\"//)
-      if [ ! -z \\\"\\\$FILES\\\" ]; then
-        echo \\\"These files are being modified repeatedly:\\\"
-        echo \\\"\\\$FILES\\\" | while IFS= read -r file; do
-          echo \\\"  - \\\$file\\\"
-        done
-        echo
-        echo \\\"Suggestions:\\\"
-        echo \\\"  → Stop coding. Investigate root cause first.\\\"
-        echo \\\"  → Run: agentbrain spec to plan your fix\\\"
-        echo
-      fi
+    sleep 2
+    RESULT=\\\$($AGENTBRAIN_BIN doom --json --path $CURRENT_REPO 2>/dev/null)
+    if echo \\\"\\\$RESULT\\\" | grep -q detected.*true; then
+      echo \\\"\\\$(date '+%Y-%m-%d %H:%M:%S') | Git: $CURRENT_HASH | DOOM | detected\\\" >> $LOG_FILE
     fi
   " > /dev/null 2>&1 &
 else
