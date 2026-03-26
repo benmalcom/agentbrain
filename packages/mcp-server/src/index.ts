@@ -19,6 +19,8 @@ import { saveHandoff, saveHandoffSchema } from './tools/save-handoff.js'
 import type { SaveHandoffInput } from './tools/save-handoff.js'
 import { loadSpecTool, loadSpecSchema } from './tools/load-spec.js'
 import type { LoadSpecInput } from './tools/load-spec.js'
+import { createSpecTool, createSpecSchema } from './tools/create-spec.js'
+import type { CreateSpecInput } from './tools/create-spec.js'
 import { detectDoomLoop, detectDoomLoopSchema } from './tools/detect-doom-loop.js'
 import type { DetectDoomLoopInput } from './tools/detect-doom-loop.js'
 
@@ -43,6 +45,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       loadStandardsSchema,
       loadContextSchema,
       loadSpecSchema,
+      createSpecSchema,
       detectDoomLoopSchema,
       saveHandoffSchema,
     ],
@@ -90,6 +93,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: result.slug
                 ? `${result.content}\n\n---\n\n[Loaded spec: ${result.slug}]`
                 : result.content,
+            },
+          ],
+        }
+      }
+
+      case 'create_spec': {
+        const result = await createSpecTool(args as unknown as CreateSpecInput)
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Spec created successfully!\n\nFile: ${result.specPath}\nSlug: ${result.slug}\nTokens used: ${result.tokensUsed}\nCost: ~$${result.cost.toFixed(4)}\n${result.injected ? 'Injected into agent files: YES' : 'Injected into agent files: NO'}\n\n---\n\n${result.content}`,
             },
           ],
         }

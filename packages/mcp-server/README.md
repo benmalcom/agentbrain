@@ -268,7 +268,7 @@ Once configured, your agent can use these 5 tools:
 
 **Returns:**
 If task specified: The spec content
-If no task: List of all available specs in agentbrain/specs/
+If no task: List of all available specs in .agentbrain/specs/
 
 **Cost:** Free - reads from disk
 
@@ -352,7 +352,7 @@ Agent: "Based on your current architecture, I recommend adding a
 ```
 You: "Save a handoff with goal: Implemented notification system"
 Agent: *Uses save_handoff tool*
-Agent: "Handoff saved to agentbrain/handoff.md!
+Agent: "Handoff saved to .agentbrain/handoff.md!
        Summary: Added NotificationService, integrated with existing
        user system, added tests. Next steps: Add email integration
        and push notification support."

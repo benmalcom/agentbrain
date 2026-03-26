@@ -69,7 +69,7 @@ agentbrain init
 
 ### What Gets Created
 
-AgentBrain generates three powerful documentation files in `agentbrain/`:
+AgentBrain generates three powerful documentation files in `.agentbrain/`:
 
 1. **`context.md`** - Navigation guide with exact file paths and function names (not generic descriptions)
 2. **`dependency-map.md`** - Visual map showing actual imports and code dependencies
