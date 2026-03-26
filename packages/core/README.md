@@ -9,6 +9,7 @@ Core intelligence layer for AgentBrain - shared library for repository analysis 
 - 🧠 **Context generation** - Creates comprehensive codebase documentation
 - 📋 **Standards generation** - Generates coding standards for different AI agents
 - 🔄 **Handoff generation** - Creates session handoff documents from git diffs
+- ⚠️ **Doom loop detection** - Identifies when files are modified repeatedly
 - 💾 **Smart caching** - Git-hash based cache invalidation for zero-cost repeat runs
 - 🔐 **Secure config** - Encrypted API key storage with proper permissions
 
@@ -88,6 +89,42 @@ const cache = await loadCache('/path/to/repo')
 await saveCachedDoc('/path/to/repo', gitHash, doc)
 ```
 
+### Doom Loop Detection
+
+```typescript
+import {
+  analyzeDoomLoop,
+  checkPendingDoomWarning,
+  getPendingDoomForMCP
+} from '@agentbrain/core'
+
+// Analyze git history for doom loops
+const result = await analyzeDoomLoop('/path/to/repo', {
+  commits: 10,      // Number of recent commits to analyze (default: 10)
+  threshold: 4,     // Minimum occurrences to flag (default: 4)
+})
+
+if (result.detected) {
+  console.log('Doom loop detected!')
+  result.files.forEach(f => {
+    console.log(`${f.path}: ${f.commitCount} times (${f.percentage}%)`)
+  })
+}
+
+// CLI: Check for pending doom warning (stateful - marks as shown)
+const warning = await checkPendingDoomWarning('/path/to/repo')
+if (warning) {
+  console.error(warning)
+}
+
+// MCP: Get doom warning (stateless - doesn't mark as shown)
+const doomWarning = await getPendingDoomForMCP('/path/to/repo')
+if (doomWarning?.detected) {
+  console.log('Files:', doomWarning.files)
+  console.log('Message:', doomWarning.message)
+}
+```
+
 ## API Reference
 
 ### Types
@@ -113,6 +150,21 @@ interface ContextDoc {
   gitHash: string
   tokenCount: number
 }
+
+interface DoomLoopResult {
+  detected: boolean
+  files: Array<{
+    path: string
+    commitCount: number
+    percentage: number
+  }>
+}
+
+interface DoomWarningForMCP {
+  detected: boolean
+  files: string[]  // Formatted strings like "src/auth.ts (8 times · 80%)"
+  message: string
+}
 ```
 
 ### Main Functions
@@ -134,6 +186,21 @@ Loads AI configuration from environment or stored config.
 
 #### `saveAPIKey(apiKey: string)`
 Saves API key to secure config file.
+
+#### `analyzeDoomLoop(repoPath: string, options?: { commits?: number, threshold?: number })`
+Analyzes git history to detect doom loops. Returns file paths modified repeatedly above threshold.
+
+#### `checkPendingDoomWarning(repoPath: string)`
+Checks for pending doom warnings in update.log and returns formatted warning message. **Stateful** - marks warning as shown to prevent repeats. Used by CLI.
+
+#### `getPendingDoomForMCP(repoPath: string)`
+Checks for pending doom warnings and returns structured object. **Stateless** - does not mark as shown. Used by MCP tools.
+
+#### `installPostCommitHook(repoPath: string)`
+Installs git post-commit hook for automatic context regeneration and doom detection.
+
+#### `uninstallPostCommitHook(repoPath: string)`
+Removes AgentBrain post-commit hook from git repository.
 
 ## Architecture
 

@@ -11,6 +11,7 @@ This MCP server lets **Claude Desktop**, **Cursor**, and **Windsurf** access Age
 - 📝 Load task specifications
 - 📋 Read coding standards
 - 💾 Save session handoffs
+- ⚠️ Detect doom loops automatically
 
 **No CLI commands needed** - your agent does it all automatically!
 
@@ -245,6 +246,28 @@ Once configured, your agent can use these 5 tools:
 - "Give me the full context of this codebase"
 - "Load project intelligence for my app"
 
+**Returns:**
+```json
+{
+  "content": "# Repository Intelligence\n\n...",
+  "fromCache": true,
+  "tokensUsed": 0,
+  "doom_warning": null  // or doom loop details if detected
+}
+```
+
+**Doom Loop Detection:** If you've been modifying the same files repeatedly, `doom_warning` will contain:
+```json
+{
+  "detected": true,
+  "files": [
+    "src/auth.ts (8 times · 80%)",
+    "src/main.ts (6 times · 60%)"
+  ],
+  "message": "Doom loop detected. Stop coding. Investigate root cause first."
+}
+```
+
 **Cost:**
 - **First time:** ~$0.02-0.05 (generates documentation)
 - **After that:** $0.00 (uses cache)
@@ -274,6 +297,15 @@ If no task: List of all available specs in .agentbrain/specs/
 
 **Note:** Specs must be created first using `agentbrain spec` CLI command.
 
+**Returns:**
+```json
+{
+  "content": "# Task Specification: Add OAuth\n\n...",
+  "slug": "add-oauth-authentication",
+  "doom_warning": null  // or doom loop details if detected
+}
+```
+
 **Example usage:**
 ```typescript
 // List all specs
@@ -284,6 +316,8 @@ load_spec({ repoPath: "/path/to/project" })
 load_spec({ repoPath: "/path/to/project", task: "add-oauth-authentication" })
 // Returns: Full spec content with problem, approach, acceptance criteria, etc.
 ```
+
+**Doom Loop Detection:** Like `load_context`, this tool returns doom warnings if detected.
 
 ---
 
@@ -315,6 +349,27 @@ load_spec({ repoPath: "/path/to/project", task: "add-oauth-authentication" })
 - "Save a handoff for this session"
 - "Create a handoff document with goal: implemented auth"
 - "Generate a session summary with the last 10 commits"
+
+**Returns:**
+```json
+{
+  "path": ".agentbrain/handoff.md",
+  "created": true,
+  "doom_warning": null  // or doom loop details if detected
+}
+```
+
+**Doom Loop Detection:** If a doom loop is detected, a warning section is **automatically appended** to the handoff document:
+
+```markdown
+## ⚠ Doom Loop Warning
+
+The following files were modified repeatedly before this handoff. Investigate before continuing:
+- src/auth.ts (8 times · 80%)
+- src/main.ts (6 times · 60%)
+```
+
+This ensures the next session starts with awareness of potential issues.
 
 **Cost:** ~$0.01
 
@@ -356,6 +411,59 @@ Agent: "Handoff saved to .agentbrain/handoff.md!
        Summary: Added NotificationService, integrated with existing
        user system, added tests. Next steps: Add email integration
        and push notification support."
+```
+
+---
+
+## Doom Loop Detection in MCP
+
+AgentBrain MCP tools automatically detect doom loops - situations where you're modifying the same files repeatedly, indicating you may be stuck.
+
+### How It Works
+
+1. **Post-commit hook** analyzes git history in the background
+2. **Hook logs detection** to `.agentbrain/update.log` if threshold exceeded
+3. **MCP tools check** for pending doom warnings on every call
+4. **Warning included** in tool responses if detected
+
+### Which Tools Return Doom Warnings
+
+Three "decision point" tools include doom warnings:
+
+- **`load_context`** - When loading full context at session start
+- **`load_spec`** - When loading task specifications
+- **`save_handoff`** - When saving session handoffs (also appends to document)
+
+### Stateless Design
+
+Unlike the CLI (which shows warnings once per commit), MCP tools are **stateless**:
+
+- Warning appears in **every tool response** while the doom condition exists
+- Never marked as "shown" - agents can see warnings multiple times
+- This ensures warnings aren't missed in long sessions
+
+### Example: Agent Response with Doom Warning
+
+When your agent calls `load_context` during a doom loop:
+
+```
+Agent: "I've loaded the repository context. However, I notice a doom loop
+       warning - you've been modifying src/auth.ts 8 times in the last 10
+       commits (80%). This suggests we may be stuck. Should we step back
+       and investigate the root cause first?"
+```
+
+The agent can proactively suggest stopping to plan rather than continuing to code.
+
+### Clearing Doom Warnings
+
+Doom warnings clear automatically when:
+- You commit changes to **different files** (breaking the pattern)
+- Enough commits pass that repeated files drop below threshold
+
+Or manually via CLI:
+```bash
+agentbrain doom --commits 20 --threshold 6  # Check with different thresholds
 ```
 
 ---
@@ -411,6 +519,56 @@ agentbrain config --show
 **3. Check the repo exists:**
 ```bash
 ls /path/to/your/project
+```
+
+---
+
+### "Doom warnings appearing too often"
+
+**Adjust sensitivity via CLI:**
+
+Doom detection uses these defaults:
+- Last **10 commits** analyzed
+- File must appear **4+ times** to trigger (40%+)
+
+To change thresholds, edit the post-commit hook or run manually:
+```bash
+agentbrain doom --commits 15 --threshold 6
+```
+
+**Excluded automatically:**
+- Lock files (package-lock.json, yarn.lock, etc.)
+- AgentBrain files (CLAUDE.md, .cursorrules, etc.)
+- Markdown documentation files
+
+**False positives are rare** - if you see a doom warning, you're likely stuck on a problem.
+
+---
+
+### "Doom warnings not appearing when they should"
+
+**1. Check if doom detection is enabled:**
+```bash
+# Verify post-commit hook exists
+ls -la .git/hooks/post-commit
+# or for Husky:
+ls -la .husky/post-commit
+```
+
+**2. Check update log:**
+```bash
+cat .agentbrain/update.log | grep DOOM
+```
+
+**3. Manually check for doom loop:**
+```bash
+agentbrain doom
+```
+
+**4. Reinstall hooks if needed:**
+```bash
+agentbrain disable --remove-hooks
+agentbrain setup --no-confirm
 ```
 
 ---

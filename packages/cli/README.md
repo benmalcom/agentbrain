@@ -1,62 +1,99 @@
 # @agentbrain/cli
 
-Command-line interface for AgentBrain - generate smart context documentation for coding agents.
+> Smart context generation for coding agents - Keep AI assistants in sync with your codebase
+
+Command-line interface for AgentBrain. Automatically generates and maintains context documentation that helps coding agents (Claude, Cursor, Windsurf) understand your codebase instantly.
+
+[![npm version](https://img.shields.io/npm/v/@agentbrain/cli.svg)](https://www.npmjs.com/package/@agentbrain/cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+---
 
 ## Installation
+
+### Global Installation (Recommended)
 
 ```bash
 npm install -g @agentbrain/cli
 ```
 
+### Local Installation
+
+```bash
+npm install --save-dev @agentbrain/cli
+```
+
+### Verify Installation
+
+```bash
+agentbrain --version
+```
+
+---
+
 ## Quick Start
 
+### One-Command Setup
+
 ```bash
-# ONE-TIME SETUP: Complete automated setup
 cd /path/to/your/project
 agentbrain setup
-
-# That's it! AgentBrain now:
-# ✓ Generates context automatically on commits
-# ✓ Injects loading instructions into agent files
-# ✓ Keeps everything in sync with your codebase
 ```
 
-### Manual Setup (Advanced)
+**That's it!** AgentBrain now:
+- ✓ Generates context automatically on every commit
+- ✓ Injects loading instructions into your agent files
+- ✓ Detects and warns about doom loops
+- ✓ Keeps everything in sync with your codebase
 
+### What Gets Created
+
+- `.agentbrain/context.md` - Full repository intelligence
+- `.agentbrain/dependency-map.md` - Service relationships
+- `.agentbrain/patterns.md` - Coding patterns and conventions
+- `CLAUDE.md` / `.cursorrules` / `.windsurfrules` - Agent loading instructions
+- `.git/hooks/post-commit` - Smart auto-regeneration hook
+
+---
+
+## Core Concepts
+
+### Smart Context Generation
+
+AgentBrain analyzes your codebase and generates three intelligence documents:
+
+1. **Context** - Architecture, key files, and technical overview
+2. **Dependency Map** - How services/modules relate to each other
+3. **Patterns** - Coding patterns, conventions, and best practices
+
+### Automatic Regeneration
+
+After setup, context updates automatically in the background when you commit **source file changes**. Commits complete instantly (~0.05s) while regeneration happens in the background.
+
+**Smart Filtering:** Only regenerates when source code changes (skips docs/config updates to save time and API costs).
+
+### Doom Loop Detection
+
+AgentBrain automatically detects when you're modifying the same files repeatedly in commits - a sign you may be stuck in a loop. When detected:
+
+- ⚠ Warning displayed on next CLI command
+- 🔔 Alert included in MCP tool responses
+- 📝 Appended to handoff documents
+- 💡 Suggests running `agentbrain spec` to plan a fix
+
+**Check manually:**
 ```bash
-# Configure your API key
-agentbrain config
-
-# Generate context docs for your repository
-cd /path/to/your/project
-agentbrain init
-
-# Generate task specification (optional)
-agentbrain spec "add user authentication"
-
-# Generate coding standards
-agentbrain standards
-
-# Generate session handoff
-agentbrain handoff
-
-# Detect doom loops in git history
 agentbrain doom
-
-# Run health diagnostics
-agentbrain doctor
-
-# View auto-update status
-agentbrain status
 ```
+
+---
 
 ## Commands
 
-### `agentbrain setup`
+### `setup` - Complete Automated Setup
 
-**One-command automated setup** for AgentBrain in your repository.
+One-command setup for AgentBrain in your repository.
 
-**Usage:**
 ```bash
 agentbrain setup [options]
 ```
@@ -65,717 +102,418 @@ agentbrain setup [options]
 - `--path <path>` - Repository path (default: current directory)
 - `--skip-hooks` - Skip git hooks installation
 - `--skip-agent-files` - Skip agent file injection
+- `--no-confirm` - Skip all confirmation prompts
 
 **What it does:**
 1. Detects which agents you use (Claude Code, Cursor, Windsurf)
 2. Generates initial context documentation
-3. Injects context loading instructions into agent files
-4. Installs smart git hooks for automatic regeneration
-5. Sets up complete automation
-
-**Output:**
-- Creates `.agentbrain/` directory with context docs
-- Updates `CLAUDE.md`, `.cursorrules`, and/or `.windsurfrules`
-- Installs `.git/hooks/post-commit` for smart auto-regeneration
-
-**Example:**
-```bash
-# Complete automated setup
-agentbrain setup
-
-# Setup without git hooks
-agentbrain setup --skip-hooks
-```
+3. Injects context loading instructions
+4. Installs smart git hooks
+5. Sets up doom loop detection
 
 **Cost:** ~$0.02-0.05 for initial generation (cached repeats are free)
 
-**Smart Git Hooks:**
-After setup, AgentBrain automatically regenerates context in the background when you commit **source file changes**. Git commits complete instantly while context updates in the background. It intelligently skips regeneration when only documentation or configuration files change, saving time and API costs.
-
-You can check the update status in `.agentbrain/update.log`.
-
 ---
 
-### `agentbrain init`
+### `init` - Regenerate Context
 
-Generate comprehensive context documentation for your repository.
+Manually regenerate all context documentation.
 
-**Usage:**
 ```bash
 agentbrain init [options]
 ```
 
 **Options:**
-- `--path <path>` - Repository path (default: current directory)
-- `--max-files <number>` - Maximum files to analyze (default: 100)
-- `--no-cache` - Skip cache and regenerate
-- `--dry-run` - Preview without generating (free!)
+- `--path <path>` - Repository path
+- `--no-confirm` - Skip confirmation prompt
+- `--silent` - Suppress output (for scripts)
 
-**Output:**
-Creates three files in `.agentbrain/` directory:
-- `context.md` - Navigation guide with exact file paths and function names
-- `dependency-map.md` - Actual code dependencies showing imports and data flow
-- `patterns.md` - Coding patterns and conventions found in the codebase
+**Use when:**
+- You want to force a fresh regeneration
+- Context feels stale or inaccurate
+- After major codebase changes
 
-**Example:**
-```bash
-# Preview cost first (free)
-agentbrain init --dry-run
-
-# Generate for current directory
-agentbrain init
-
-# Generate for specific path with custom limit
-agentbrain init --path ~/my-project --max-files 50
-```
-
-**Cost:** ~$0.02-0.05 for typical repositories (cached repeats are free)
+**Cost:** ~$0.02-0.05 per regeneration (same git hash = free from cache)
 
 ---
 
-### `agentbrain spec`
+### `spec` - Create Task Specifications
 
-Generate a structured specification for a task or feature using AI-guided prompts.
+Generate AI-guided task specifications with problem analysis and architecture planning.
 
-**Usage:**
 ```bash
-agentbrain spec [task-description] [options]
-```
-
-**Arguments:**
-- `task-description` - Brief task description (e.g., "add user authentication")
-
-**Options:**
-- `--path <path>` - Repository path (default: current directory)
-
-**Interactive prompts:**
-The command guides you through 5 questions to create a comprehensive spec:
-1. **Problem** - What problem does this solve? (1-2 sentences)
-2. **Approach** - What's your approach or implementation idea? (or "not sure yet")
-3. **Out of Scope** - What should the agent NOT touch or change?
-4. **Done Criteria** - What does "done" look like? (acceptance criteria)
-5. **Risks** - Any edge cases or risks to consider?
-
-**Output:**
-Creates `.agentbrain/specs/{task-slug}.md` with:
-- Problem statement
-- Scope boundaries
-- Acceptance criteria checklist
-- Risks & edge cases
-- Implementation notes (AI-generated using repository context)
-- Task checklist (ordered by dependency)
-
-**Automatic Injection:**
-Injects spec reference into your agent files (CLAUDE.md, .cursorrules, .windsurfrules) so the agent reads the spec before implementing.
-
-**Example:**
-```bash
-# Generate spec with interactive prompts
-agentbrain spec "add OAuth authentication"
-
-# The command will:
-# 1. Ask 5 questions to gather requirements
-# 2. Use repository context to generate implementation notes
-# 3. Create .agentbrain/specs/add-oauth-authentication.md
-# 4. Inject "Active Spec" reference into agent files
-# 5. Agent automatically reads spec at session start
-```
-
-**Example Spec Output:**
-```markdown
-# Spec: add OAuth authentication
-
-*Created: 2025-01-15 | Repo: my-project*
-
-## Problem
-Users need to authenticate using OAuth providers instead of just email/password.
-
-## Scope
-**Out of scope:** Social login with Facebook/Twitter
-
-## Acceptance Criteria
-- [ ] OAuth flow works with Google
-- [ ] Tokens are stored securely
-- [ ] Existing users can link OAuth accounts
-
-## Risks & Edge Cases
-- Token expiry handling
-- Race conditions during OAuth callback
-
-## Implementation Notes
-- Use existing auth middleware pattern from src/auth/
-- Store OAuth tokens in encrypted user_credentials table
-- Add OAuth callback route to existing auth router
-- Follow repository's error handling pattern
-
-## Task Checklist
-- [ ] Add OAuth provider configuration
-- [ ] Implement OAuth callback handler
-- [ ] Create token storage schema
-- [ ] Add OAuth middleware
-- [ ] Update auth routes
-- [ ] Write integration tests
-```
-
-**MCP Integration:**
-After creating a spec, agents can load it via the MCP `load_spec` tool:
-```typescript
-// Agent automatically loads via injected reference
-// Or manually via MCP:
-load_spec({ repoPath: "/path/to/repo", task: "add-oauth-authentication" })
-```
-
-**Cost:** ~$0.01-0.02 (uses fast model with context-aware generation)
-
-**Workflow:**
-```bash
-# 1. Plan feature with spec
-agentbrain spec "add OAuth authentication"
-
-# 2. Agent reads spec automatically at session start
-# (Injected into CLAUDE.md, .cursorrules, .windsurfrules)
-
-# 3. Implement feature following the spec
-# ... coding session ...
-
-# 4. Remove spec reference when done
-# (Manually edit agent files or use agentbrain disable)
-```
-
----
-
-### `agentbrain standards`
-
-Generate coding standards files for AI agents.
-
-**Usage:**
-```bash
-agentbrain standards [options]
+agentbrain spec "<task description>" [options]
 ```
 
 **Options:**
-- `--path <path>` - Repository path (default: current directory)
+- `--path <path>` - Repository path
+- `--load <slug>` - Load existing spec by slug
 
-**Interactive prompts:**
-- Primary language (e.g., TypeScript, Python)
-- Framework (e.g., React, Django)
-- Testing library (e.g., Jest, pytest)
-- Style guide (e.g., Prettier + ESLint)
-- Anti-patterns to avoid
-- Architecture notes
-- Target agents (Claude Code, Cursor, Windsurf)
-
-**Output:**
-Creates agent-specific files:
-- `CLAUDE.md` - For Claude Code CLI
-- `.cursorrules` - For Cursor (also supports legacy `.cursor/rules`)
-- `.windsurfrules` - For Windsurf
-
-**Example:**
+**Examples:**
 ```bash
-agentbrain standards
-# Follow the interactive prompts
+# Create new spec
+agentbrain spec "add user authentication with OAuth"
+
+# Load existing spec
+agentbrain spec --load add-user-authentication
 ```
 
-**Cost:** ~$0.01-0.02
+**What it creates:**
+- Problem analysis and context
+- Technical approach and architecture
+- Implementation steps
+- Testing strategy
+- Done criteria
+
+**Specs are saved to:** `.agentbrain/specs/<task-slug>.md`
+
+**Cost:** ~$0.01-0.03 per spec generation
 
 ---
 
-### `agentbrain handoff`
+### `doom` - Detect Doom Loops
 
-Generate session handoff document from git changes.
+Analyze git history to detect if you're modifying the same files repeatedly.
 
-**Usage:**
-```bash
-agentbrain handoff [options]
-```
-
-**Options:**
-- `--path <path>` - Repository path (default: current directory)
-- `--goal <goal>` - Session goal or objective
-- `--commits <number>` - Number of recent commits to include (default: 5)
-
-**Output:**
-Creates `.agentbrain/handoff.md` with:
-- Summary of changes
-- Current state
-- Context & decisions
-- Next steps
-- Blockers & questions
-
-**Example:**
-```bash
-# After making changes
-agentbrain handoff --goal "Implement user authentication"
-
-# Include more commit history
-agentbrain handoff --goal "Completed auth system" --commits 10
-```
-
-**Cost:** ~$0.01
-
----
-
-### `agentbrain doom`
-
-Detect "doom loops" - when your agent is stuck modifying the same files repeatedly.
-
-**Usage:**
 ```bash
 agentbrain doom [options]
 ```
 
 **Options:**
-- `--path <path>` - Repository path (default: current directory)
-- `--commits <number>` - Number of commits to analyze (default: 10)
-- `--threshold <number>` - Threshold for doom loop detection (default: 4)
+- `--path <path>` - Repository path
+- `--commits <n>` - Number of recent commits to analyze (default: 10)
+- `--threshold <n>` - Minimum occurrences to flag (default: 4)
+- `--json` - Output as JSON for programmatic use
 
-**What it detects:**
-- Files modified repeatedly in recent commits
-- Indicators that the agent is stuck in a loop
-- Patterns suggesting the same problem is being fixed multiple times
-
-**Output:**
-- List of files modified more than threshold times
-- Percentage breakdown of commit focus
-- Suggestions for breaking out of the loop
-
-**Example:**
-```bash
-# Check last 10 commits for doom loops
-agentbrain doom
-
-# Analyze last 20 commits with higher threshold
-agentbrain doom --commits 20 --threshold 5
+**Example Output:**
 ```
+Analyzing last 10 commits...
 
-**Example output:**
-```
-⚠ Possible doom loop detected
+⚠ Doom loop detected!
 
-These files were modified 4+ times in the last 10 commits:
-
-  billing.service.ts (6 times - 60%)
-  auth.service.ts    (4 times - 40%)
+These files appear repeatedly:
+  apps/api/src/main.ts (9 times · 90%)
+  apps/api/src/auth.ts (6 times · 60%)
 
 Suggestions:
   → Stop coding. Investigate root cause first.
   → Run: agentbrain spec "fix [problem description]"
-  → Consider: revert to last working state and start fresh
 ```
 
-**Cost:** Free - pure git analysis, no API calls
+**Automatic Detection:**
+After commits, doom detection runs in the background. Warning shown on next command if detected.
 
 ---
 
-### `agentbrain doctor`
+### `doctor` - Health Diagnostics
 
-Run comprehensive diagnostic checks on your AgentBrain setup.
+Run health checks on your AgentBrain setup.
 
-**Usage:**
 ```bash
 agentbrain doctor [options]
 ```
 
 **Options:**
-- `--path <path>` - Repository path (default: current directory)
-- `--fix` - Attempt to auto-fix warnings (experimental)
-- `--json` - Output JSON for programmatic use
+- `--path <path>` - Repository path
+- `--json` - Output as JSON
 
-**What it checks:**
-- ✓ API key configuration (Anthropic or OpenAI)
-- ✓ Git hooks installed correctly
-- ✓ Cache validity (matches current git HEAD)
-- ✓ Context freshness (last generation time)
-- ✓ Agent files exist (CLAUDE.md, .cursorrules, .windsurfrules)
-- ✓ Hook execution log (recent updates)
-- ✓ `.agentbrain/` directory structure
+**Checks:**
 - ✓ Git repository status
-- ✓ File permissions
-- ✓ Node.js version compatibility
-- ✓ Available disk space
+- ✓ Context files exist and are valid
+- ✓ Agent files are configured
+- ✓ Git hooks installed correctly
+- ✓ API configuration
 
-**Output:**
-- Detailed check results with pass/warn/fail status
-- Score summary (e.g., "11/11 checks passed")
-- Actionable fix suggestions for any warnings
-- Execution time for diagnostics
-
-**Example:**
-```bash
-# Run diagnostics
-agentbrain doctor
-
-# Try to auto-fix issues
-agentbrain doctor --fix
-
-# Get JSON output for scripts
-agentbrain doctor --json
-```
-
-**Example output:**
-```
-AgentBrain Doctor — /Users/you/project
-
-Checking setup...
-
-  ✓ api_key               anthropic detected
-  ✓ git_hook              installed · post-commit
-  ✓ cache_valid           matches HEAD: d9b2643
-  ✓ context_freshness     0 hours ago
-  ✓ agent_files           CLAUDE.md · .cursorrules
-  ✓ hook_log              2 updates · last: success
-  ✓ directory_structure   all directories exist
-  ✓ git_repo              valid repository
-  ✓ file_permissions      all correct
-  ✓ node_version          v20.10.0 (compatible)
-  ✓ disk_space            42.3 GB available
-
-Score: 11/11 checks passed
-```
-
-**Cost:** Free - local checks only, no API calls
+**Use when:**
+- Setup isn't working as expected
+- Context generation fails
+- Git hooks not firing
 
 ---
 
-### `agentbrain status`
+### `status` - Auto-Update Status
 
-Show git hook auto-update history and configuration.
+View status of background context updates.
 
-**Usage:**
 ```bash
 agentbrain status [options]
 ```
 
 **Options:**
-- `--path <path>` - Repository path (default: current directory)
-- `--lines <number>` - Number of recent log entries to show (default: 10)
+- `--path <path>` - Repository path
 
-**What it shows:**
-- Configured AI agents (Claude Code, Cursor, Windsurf)
-- Setup timestamp
-- Recent git hook execution log
-- Success/failure status of automatic updates
-- Processing time for each update
-
-**Output:**
-- Agent configuration summary
-- Last N entries from `.agentbrain/update.log`
-- Formatted with timestamps and status indicators
-
-**Example:**
-```bash
-# Show last 10 updates
-agentbrain status
-
-# Show last 20 updates
-agentbrain status --lines 20
-```
-
-**Example output:**
-```
-Repository: /Users/you/project
-
-Configured agents:
-  claude-code, cursor
-  Setup: 1/15/2025, 10:30:00 AM
-
-Recent hook updates (.agentbrain/update.log):
-
-2025-01-15 14:23:45 | Git: d9b2643 | SUCCESS | 25s
-2025-01-15 12:10:12 | Git: a3f8921 | SUCCESS | 22s
-2025-01-15 10:45:33 | Git: f2e7890 | SKIP    | Documentation changes only
-2025-01-14 16:20:05 | Git: 8c1b456 | SUCCESS | 28s
-```
-
-**Cost:** Free - reads local log file, no API calls
+**Shows:**
+- Recent update history from `.agentbrain/update.log`
+- Success/failure status
+- Update duration
+- Git hash for each update
 
 ---
 
-### `agentbrain config`
+### `standards` - Generate Coding Standards
 
-Configure or view API key.
+Generate coding standards documentation based on your codebase patterns.
 
-**Usage:**
 ```bash
-agentbrain config [options]
+agentbrain standards [options]
 ```
 
 **Options:**
-- `--show` - Display current configuration
+- `--path <path>` - Repository path
 
-**Example:**
-```bash
-# Set API key interactively
-agentbrain config
+**Creates:** `.agentbrain/standards.md`
 
-# View current config
-agentbrain config --show
-```
-
-**Supported providers:**
-- Anthropic (Claude) - keys starting with `sk-ant-`
-- OpenAI (GPT) - keys starting with `sk-`
-
-Configuration stored at `~/.agentbrain/config.json` with secure permissions.
+**Cost:** ~$0.01-0.02 per generation
 
 ---
 
-### `agentbrain disable`
+### `handoff` - Generate Session Handoff
 
-Disable or uninstall AgentBrain from your repository.
+Generate session handoff document with recent changes and context.
 
-**Usage:**
+```bash
+agentbrain handoff [options]
+```
+
+**Options:**
+- `--path <path>` - Repository path
+- `--goal <goal>` - Session goal (optional)
+- `--commits <n>` - Number of recent commits (default: 5)
+
+**Creates:** `.agentbrain/handoff.md`
+
+**Includes:**
+- Recent changes summary
+- Session context
+- Next steps recommendations
+- ⚠ Doom loop warning (if detected)
+
+**Cost:** ~$0.01-0.02 per generation
+
+---
+
+### `config` - Configure API Settings
+
+Configure AI provider API keys and settings.
+
+```bash
+agentbrain config
+```
+
+**Interactive setup for:**
+- Provider selection (OpenAI, Anthropic, or both)
+- API key configuration
+- Model selection
+
+**Supports:**
+- OpenAI (GPT-4, GPT-4 Turbo)
+- Anthropic (Claude 3.5 Sonnet, Claude 3 Opus)
+
+---
+
+### `disable` - Disable AgentBrain
+
+Disable AgentBrain features in your repository.
+
 ```bash
 agentbrain disable [options]
 ```
 
 **Options:**
-- `--remove-hooks` - Remove git hooks only
-- `--remove-files` - Remove generated context files only (.agentbrain/ directory)
-- `--remove-agent-files` - Remove agent config files (CLAUDE.md, .cursorrules, etc.)
-- `--full` - Complete uninstall (removes everything)
-- `--yes` - Skip confirmation prompts
+- `--path <path>` - Repository path
+- `--remove-hooks` - Remove git hooks
+- `--remove-agent-files` - Remove agent file modifications
 
-**Interactive Mode:**
-If you run `agentbrain disable` without options, you'll be prompted to select what to remove.
+**Use when:**
+- Temporarily disabling automation
+- Troubleshooting issues
+- Removing AgentBrain from project
 
-**Example:**
-```bash
-# Interactive mode - choose what to remove
-agentbrain disable
-
-# Remove only git hooks (keep context files)
-agentbrain disable --remove-hooks
-
-# Remove only generated files (keep hooks and agent files)
-agentbrain disable --remove-files
-
-# Complete uninstall without prompts
-agentbrain disable --full --yes
-```
-
-**Re-enabling:**
-To re-enable AgentBrain after disabling, simply run `agentbrain setup` again.
+**Note:** Does not delete `.agentbrain/` directory or context files.
 
 ---
 
-## API Key Configuration
+## MCP Integration
 
-AgentBrain supports multiple ways to provide your API key. They are checked in this priority order:
+AgentBrain provides a Model Context Protocol (MCP) server that enables AI agents to access repository intelligence directly.
 
-### 1. Environment Variables (Highest Priority)
-
+**Install MCP Server:**
 ```bash
-# Anthropic
-export ANTHROPIC_API_KEY="sk-ant-..."
-
-# OpenAI
-export OPENAI_API_KEY="sk-..."
+npm install -g @agentbrain/mcp-server
 ```
 
-### 2. `.env` Files
+**See:** [@agentbrain/mcp-server](https://www.npmjs.com/package/@agentbrain/mcp-server) for setup instructions.
 
-Create a `.env` or `.env.local` file in your project:
-
-```bash
-# In your project directory
-cat > .env <<EOF
-OPENAI_API_KEY=sk-...
-EOF
-```
-
-AgentBrain will automatically load API keys from:
-- `.env.local` in current directory
-- `.env` in current directory
-- `.env.local` in git repository root
-- `.env` in git repository root
-
-**Note:** `.env` files are loaded automatically - no need to export or source them!
-
-### 3. Stored Configuration (Lowest Priority)
-
-Use the `agentbrain config` command to store your key persistently:
-
-```bash
-agentbrain config
-```
-
-This stores the key securely at `~/.agentbrain/config.json` with 0600 permissions.
+**MCP Tools Include Doom Warnings:**
+- `load_context` - Returns `doom_warning` field if loop detected
+- `load_spec` - Returns `doom_warning` field if loop detected
+- `save_handoff` - Appends doom section to handoff document
 
 ---
-
-## Summary: API Key Priority
-
-1. ✅ Environment variables (`ANTHROPIC_API_KEY` or `OPENAI_API_KEY`)
-2. ✅ `.env.local` in current directory
-3. ✅ `.env` in current directory
-4. ✅ `.env.local` in git root
-5. ✅ `.env` in git root
-6. ✅ `~/.agentbrain/config.json`
-
-## Usage with AI Agents
-
-After running `agentbrain setup`, your agents automatically load context at every session start.
-
-### Claude Code CLI
-
-AgentBrain injects loading instructions into `CLAUDE.md`, which Claude Code CLI reads automatically from your project root. No manual action needed.
-
-### Cursor
-
-AgentBrain injects loading instructions into `.cursorrules` (or `.cursor/rules` for legacy setups), which Cursor reads automatically. No manual action needed.
-
-### Windsurf
-
-AgentBrain injects loading instructions into `.windsurfrules`, which Windsurf reads automatically. No manual action needed.
-
-### Manual Loading (Advanced)
-
-If not using `agentbrain setup`, you can manually reference context files:
-```markdown
-<!-- In agent prompt or rules file -->
-@.agentbrain/context.md
-@.agentbrain/dependency-map.md
-@.agentbrain/patterns.md
-```
-
-## Cost Estimates
-
-All costs are approximate (as of January 2025):
-
-| Operation | Tokens | Anthropic | OpenAI |
-|-----------|--------|-----------|--------|
-| Init (small) | 10-20K | $0.02-0.05 | $0.02-0.04 |
-| Init (medium) | 30-50K | $0.08-0.15 | $0.07-0.12 |
-| Spec | 3-5K | $0.01-0.02 | $0.01-0.02 |
-| Standards | 5-8K | $0.01-0.02 | $0.01-0.02 |
-| Handoff | 3-5K | $0.01 | $0.01 |
-| **Cached repeat** | 0 | **$0.00** | **$0.00** |
-
-**Cache-first:** Repeat runs on same git commit are instant and free!
-
-## Workflow Example
-
-### Recommended: Automated Setup
-
-```bash
-# 1. One-time setup (do once per repo)
-cd /path/to/project
-agentbrain setup
-
-# 2. Start coding - context auto-updates on commits!
-# ... make changes ...
-git commit -m "Add feature"
-# → AgentBrain automatically regenerates context (if source files changed)
-
-# 3. Generate handoff when needed
-agentbrain handoff --goal "Completed authentication feature"
-
-# That's it! Everything else is automatic.
-```
-
-### Manual Setup (Advanced)
-
-```bash
-# 1. Initial setup
-cd /path/to/project
-agentbrain config
-
-# 2. Generate context (do once per repo)
-agentbrain init --dry-run  # Preview first
-agentbrain init            # Actually generate
-
-# 3. Generate standards (do once per repo)
-agentbrain standards
-
-# 4. During development sessions
-# ... make changes ...
-agentbrain handoff --goal "Add authentication feature"
-
-# 5. Manually regenerate context after changes
-agentbrain init  # Only costs money if git hash changed
-```
 
 ## Troubleshooting
 
-### "No API key found"
+### Context Not Regenerating on Commits
 
-Set your API key:
+**Check git hooks:**
 ```bash
-agentbrain config
-# or
-export ANTHROPIC_API_KEY="sk-ant-..."
+agentbrain doctor
 ```
 
-### "Command not found: agentbrain"
-
-Reinstall globally:
+**Verify hook is installed:**
 ```bash
-npm install -g @agentbrain/cli
+cat .git/hooks/post-commit
+# or for Husky:
+cat .husky/post-commit
 ```
 
-### Permission errors
-
-Fix npm permissions:
+**Reinstall hooks:**
 ```bash
-mkdir ~/.npm-global
-npm config set prefix '~/.npm-global'
-echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
-source ~/.bashrc
+agentbrain disable --remove-hooks
+agentbrain setup
 ```
 
-## Examples
+---
 
-### Generate docs for multiple projects
+### Hook Errors After Commits
 
+**Check update log:**
 ```bash
-for project in ~/projects/*; do
-  echo "Processing $project..."
-  agentbrain init --path "$project"
-done
+cat .agentbrain/update.log
 ```
 
-### CI/CD integration
+**Common issues:**
+- API key not configured: Run `agentbrain config`
+- Permission errors: Check file permissions on `.agentbrain/`
+- Path issues: Hook uses fallback paths to find `agentbrain` binary
 
+---
+
+### Context Feels Stale
+
+**Force regeneration:**
 ```bash
-# In CI pipeline
-export ANTHROPIC_API_KEY="${ANTHROPIC_KEY}"
-agentbrain init --path . --no-cache
-# Commit generated docs to repo
-git add .agentbrain/
-git commit -m "Update context docs"
+agentbrain init --no-confirm
 ```
 
-## Advanced Usage
+**Check cache:**
+Cache is tied to git hash. If you haven't committed changes, old cache is used.
 
-### Custom file limits
+---
 
+### Doom Loop False Positives
+
+**Adjust sensitivity:**
 ```bash
-# For large repos, limit files
-agentbrain init --max-files 50
-
-# For small repos, increase limit
-agentbrain init --max-files 200
+# Check last 15 commits, flag if file appears 6+ times
+agentbrain doom --commits 15 --threshold 6
 ```
 
-### Force regeneration
+**Excluded patterns:**
+- Lock files (package-lock.json, etc.)
+- AgentBrain files (CLAUDE.md, .cursorrules, etc.)
+- Markdown files
 
-```bash
-# Skip cache even if git hash unchanged
-agentbrain init --no-cache
+---
+
+### API Costs Too High
+
+**Smart regeneration already optimized:**
+- Only regenerates on source file changes
+- Skips docs/config updates
+- Caches by git hash
+
+**Further reduce costs:**
+- Use `--skip-hooks` during development sprints
+- Manually regenerate only when needed: `agentbrain init`
+- Disable temporarily: `agentbrain disable`
+
+---
+
+### Husky Compatibility
+
+AgentBrain detects and supports Husky automatically.
+
+**Husky v9+ (recommended):**
+Hook installs directly to `.husky/post-commit`
+
+**Custom hook paths:**
+Detects `git config core.hooksPath` and installs there
+
+**No conflicts:** AgentBrain hook runs alongside existing hooks
+
+---
+
+## Files & Directories
+
+### Generated Files
+
+```
+.agentbrain/
+├── context.md              # Full repository intelligence
+├── dependency-map.md       # Service relationships
+├── patterns.md             # Coding patterns
+├── standards.md            # Coding standards (optional)
+├── handoff.md             # Session handoff (optional)
+├── update.log             # Auto-update history
+└── specs/                 # Task specifications
+    └── <task-slug>.md
 ```
 
-## Related Packages
+### Agent Files (Modified)
 
-- [@agentbrain/core](../core) - Core library
-- [@agentbrain/mcp-server](../mcp-server) - MCP server for agents
+- `CLAUDE.md` - Claude Code loading instructions
+- `.cursorrules` - Cursor loading instructions
+- `.windsurfrules` - Windsurf loading instructions
 
-## Support
+### Git Hooks
 
-- GitHub Issues: [Report bugs](https://github.com/benmalcom/agentbrain/issues)
-- Documentation: [Full docs](https://github.com/benmalcom/agentbrain)
+- `.git/hooks/post-commit` - Standard installation
+- `.husky/post-commit` - Husky installation
+
+---
+
+## Best Practices
+
+### When to Use AgentBrain
+
+✅ **Good for:**
+- Active development with AI assistants
+- Onboarding new developers
+- Complex codebases with multiple services
+- Keeping AI agents in sync with changes
+
+❌ **Skip if:**
+- Early prototyping (context not stable yet)
+- API costs are a major concern
+- Repository is < 10 files
+
+### Workflow Tips
+
+1. **Initial setup:** Run `agentbrain setup` once
+2. **Let automation work:** Commits regenerate context automatically
+3. **Check doom warnings:** If shown, investigate before continuing
+4. **Use specs:** Plan complex tasks with `agentbrain spec`
+5. **Handoff cleanly:** Generate handoff at session end
+
+### Cost Management
+
+- Initial setup: ~$0.02-0.05
+- Auto-regeneration: ~$0.02-0.05 per commit (only on source changes)
+- Specs: ~$0.01-0.03 each
+- **Expected monthly cost:** $1-5 for typical projects
+
+---
+
+## Links
+
+- **npm:** https://www.npmjs.com/package/@agentbrain/cli
+- **GitHub:** https://github.com/benmalcom/agentbrain
+- **MCP Server:** https://www.npmjs.com/package/@agentbrain/mcp-server
+- **Core Library:** https://www.npmjs.com/package/@agentbrain/core
+
+---
 
 ## License
 
-MIT
+MIT © AgentBrain

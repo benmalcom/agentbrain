@@ -4,7 +4,15 @@ import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { homedir } from 'node:os'
-import { loadAIConfig, generateContext, getCachedDoc, getGitHash, loadCache } from '@agentbrain/core'
+import {
+  loadAIConfig,
+  generateContext,
+  getCachedDoc,
+  getGitHash,
+  loadCache,
+  getPendingDoomForMCP,
+  type DoomWarningForMCP,
+} from '@agentbrain/core'
 
 /**
  * Expand path: handles ~, relative paths, etc.
@@ -29,6 +37,7 @@ export interface LoadContextOutput {
   cached_sha?: string
   current_sha?: string
   message?: string
+  doom_warning?: DoomWarningForMCP | null
 }
 
 export async function loadContext(input: LoadContextInput): Promise<LoadContextOutput> {
@@ -61,6 +70,9 @@ export async function loadContext(input: LoadContextInput): Promise<LoadContextO
     const cache = await loadCache(expandedPath)
     const isStale = cache && cache.gitHash !== currentGitHash
 
+    // Check for doom loop warnings
+    const doomWarning = await getPendingDoomForMCP(expandedPath)
+
     return {
       content: combined,
       fromCache: true,
@@ -71,6 +83,7 @@ export async function loadContext(input: LoadContextInput): Promise<LoadContextO
         current_sha: currentGitHash,
         message: 'Context may be outdated. Run agentbrain init to refresh.',
       }),
+      doom_warning: doomWarning,
     }
   }
 
@@ -89,6 +102,9 @@ export async function loadContext(input: LoadContextInput): Promise<LoadContextO
     const cache = await loadCache(expandedPath)
     const isStale = cache && cache.gitHash !== currentGitHash
 
+    // Check for doom loop warnings
+    const doomWarning = await getPendingDoomForMCP(expandedPath)
+
     return {
       content: combined,
       fromCache: true,
@@ -99,6 +115,7 @@ export async function loadContext(input: LoadContextInput): Promise<LoadContextO
         current_sha: currentGitHash,
         message: 'Context may be outdated. Run agentbrain init to refresh.',
       }),
+      doom_warning: doomWarning,
     }
   }
 
@@ -113,11 +130,15 @@ export async function loadContext(input: LoadContextInput): Promise<LoadContextO
     .map((doc) => `# ${doc.type}\n\n${doc.content}`)
     .join('\n\n---\n\n')
 
+  // Check for doom loop warnings
+  const doomWarning = await getPendingDoomForMCP(expandedPath)
+
   // Newly generated content is never stale
   return {
     content: combined,
     fromCache: false,
     tokensUsed: result.totalTokens,
+    doom_warning: doomWarning,
   }
 }
 

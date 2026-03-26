@@ -4,7 +4,7 @@ import { writeFile, mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { homedir } from 'node:os'
-import { loadAIConfig, generateHandoff } from '@agentbrain/core'
+import { loadAIConfig, generateHandoff, getPendingDoomForMCP } from '@agentbrain/core'
 
 /**
  * Expand path: handles ~, relative paths, etc.
@@ -45,6 +45,16 @@ export async function saveHandoff(input: SaveHandoffInput): Promise<SaveHandoffO
     commitCount: commit_count,
   })
 
+  // Check for doom loop warnings
+  const doomWarning = await getPendingDoomForMCP(expandedPath)
+
+  // Append doom warning section if detected
+  let finalContent = result.doc.content
+  if (doomWarning && doomWarning.detected) {
+    const doomSection = `\n\n## ⚠ Doom Loop Warning\n\nThe following files were modified repeatedly before this handoff. Investigate before continuing:\n${doomWarning.files.map((f) => `- ${f}`).join('\n')}\n`
+    finalContent = result.doc.content + doomSection
+  }
+
   // Write to disk
   const outputDir = join(expandedPath, 'agentbrain')
   if (!existsSync(outputDir)) {
@@ -52,10 +62,10 @@ export async function saveHandoff(input: SaveHandoffInput): Promise<SaveHandoffO
   }
 
   const filePath = join(outputDir, 'handoff.md')
-  await writeFile(filePath, result.doc.content, 'utf-8')
+  await writeFile(filePath, finalContent, 'utf-8')
 
   return {
-    content: result.doc.content,
+    content: finalContent,
     filePath: '.agentbrain/handoff.md',
     tokensUsed: result.tokenCount,
   }

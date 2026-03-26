@@ -20,6 +20,12 @@ export interface DoomLoopResult {
   files: DoomFile[]
 }
 
+export interface DoomWarningForMCP {
+  detected: boolean
+  files: string[]
+  message: string
+}
+
 /**
  * Files to exclude from doom loop detection
  */
@@ -170,4 +176,55 @@ ${fileList}
 → Stop coding. Investigate root cause first.
 → Run: agentbrain spec "fix [problem description]"
 `
+}
+
+/**
+ * Get pending doom warning for MCP tool responses
+ * Unlike checkPendingDoomWarning, this does NOT mark as shown
+ * since MCP tools are stateless
+ */
+export async function getPendingDoomForMCP(repoPath: string): Promise<DoomWarningForMCP | null> {
+  const updateLogPath = join(repoPath, '.agentbrain', 'update.log')
+
+  // Check if update log exists
+  if (!existsSync(updateLogPath)) {
+    return null
+  }
+
+  // Get current git hash
+  let currentHash: string
+  try {
+    const { stdout } = await execAsync('git rev-parse --short HEAD', { cwd: repoPath })
+    currentHash = stdout.trim()
+  } catch {
+    return null // Not a git repo or no commits
+  }
+
+  // Read update log
+  const logContent = await readFile(updateLogPath, 'utf-8')
+  const lines = logContent.split('\n')
+
+  // Find DOOM entries for current hash
+  const doomPattern = `| Git: ${currentHash} | DOOM | detected`
+  const hasDoom = lines.some((line) => line.includes(doomPattern))
+
+  if (!hasDoom) {
+    return null // No doom detected
+  }
+
+  // Run live doom analysis to get current file details
+  const result = await analyzeDoomLoop(repoPath)
+
+  if (!result.detected || result.files.length === 0) {
+    return null // False alarm or already resolved
+  }
+
+  // Format file list with details
+  const fileList = result.files.map((f) => `${f.path} (${f.commitCount} times · ${f.percentage}%)`)
+
+  return {
+    detected: true,
+    files: fileList,
+    message: 'Doom loop detected. Stop coding. Investigate root cause first.',
+  }
 }

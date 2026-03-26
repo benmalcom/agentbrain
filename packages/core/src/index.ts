@@ -72,5 +72,5 @@ export { saveAgentConfig, loadAgentConfig } from './config/agent-config.js'
 export type { AgentConfig } from './config/agent-config.js'
 
 // Doom loop detection
-export { analyzeDoomLoop, checkPendingDoomWarning } from './doom/index.js'
-export type { DoomFile, DoomLoopResult } from './doom/index.js'
+export { analyzeDoomLoop, checkPendingDoomWarning, getPendingDoomForMCP } from './doom/index.js'
+export type { DoomFile, DoomLoopResult, DoomWarningForMCP } from './doom/index.js'

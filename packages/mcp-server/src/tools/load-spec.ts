@@ -1,10 +1,16 @@
 // MCP tool: load_spec - Load specification files
 
-import { listSpecs, loadSpec } from '@agentbrain/core'
+import { listSpecs, loadSpec, getPendingDoomForMCP, type DoomWarningForMCP } from '@agentbrain/core'
 
 export interface LoadSpecInput {
   repoPath: string
   task?: string
+}
+
+export interface LoadSpecOutput {
+  content: string
+  slug?: string
+  doom_warning?: DoomWarningForMCP | null
 }
 
 export const loadSpecSchema = {
@@ -28,10 +34,11 @@ export const loadSpecSchema = {
   },
 }
 
-export async function loadSpecTool(
-  input: LoadSpecInput
-): Promise<{ content: string; slug?: string }> {
+export async function loadSpecTool(input: LoadSpecInput): Promise<LoadSpecOutput> {
   const { repoPath, task } = input
+
+  // Check for doom loop warnings
+  const doomWarning = await getPendingDoomForMCP(repoPath)
 
   // If no task provided, list all available specs
   if (!task) {
@@ -41,11 +48,13 @@ export async function loadSpecTool(
       return {
         content:
           'No specs found. Run `agentbrain spec "<task>"` to create your first specification.',
+        doom_warning: doomWarning,
       }
     }
 
     return {
       content: `Available specs:\n\n${specs.map((s) => `- ${s}`).join('\n')}\n\nTo load a spec, provide the task slug as the "task" parameter.`,
+      doom_warning: doomWarning,
     }
   }
 
@@ -60,11 +69,13 @@ export async function loadSpecTool(
   if (!content) {
     return {
       content: `Spec not found: ${slug}\n\nRun \`agentbrain spec "${task}"\` to create it.`,
+      doom_warning: doomWarning,
     }
   }
 
   return {
     content,
     slug,
+    doom_warning: doomWarning,
   }
 }

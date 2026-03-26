@@ -13,6 +13,7 @@ AgentBrain generates comprehensive context documentation that helps AI agents (C
 
 - 🚀 **One-Command Setup** - Complete automation with `agentbrain setup`
 - 🔄 **Background Auto-Regeneration** - Git commits complete instantly, context updates in background
+- ⚠️ **Doom Loop Detection** - Automatically detects when you're stuck modifying the same files repeatedly
 - 🎯 **Auto-Injection** - Automatically injects loading instructions into agent files
 - 🤖 **Smart Context Generation** - AI analyzes your codebase and creates intelligent navigation guides
 - 📊 **Large Repo Support** - Adaptive file selection (150+ files for repos >10k files)
@@ -48,6 +49,7 @@ agentbrain setup
 
 **That's it!** AgentBrain now:
 - ✅ Auto-generates context when you commit source changes
+- ✅ Detects doom loops automatically (warns if you're stuck on the same files)
 - ✅ Injects loading instructions into your agent files (CLAUDE.md, .cursorrules, etc.)
 - ✅ Keeps everything in sync automatically
 
@@ -98,6 +100,9 @@ agentbrain standards
 
 # Generate session handoff
 agentbrain handoff
+
+# Check for doom loops
+agentbrain doom
 
 # Manage API key
 agentbrain config
@@ -189,6 +194,55 @@ This approach:
 - ✅ Minimizes costs
 - ✅ Prevents context overflow
 - ✅ Scales to large repositories
+
+---
+
+## ⚠️ Doom Loop Detection
+
+AgentBrain automatically detects when you're stuck modifying the same files repeatedly - a strong indicator you're in a "doom loop" and should stop to investigate the root cause.
+
+### How It Works
+
+1. **Post-commit hook** analyzes the last 10 commits in the background
+2. **Detects patterns** - Flags files modified 4+ times (40%+)
+3. **Warns before commands** - Shows alert on next CLI command
+4. **Surfaces in MCP** - Includes warnings in MCP tool responses for AI agents
+
+### Example Warning
+
+```
+⚠ AgentBrain: doom loop detected on last commit
+  src/auth.ts (8 times · 80%)
+  src/main.ts (6 times · 60%)
+→ Stop coding. Investigate root cause first.
+→ Run: agentbrain spec "fix [problem description]"
+```
+
+### When You See This
+
+1. **Stop coding** - You're likely addressing symptoms, not the root cause
+2. **Investigate** - Why are you changing the same files repeatedly?
+3. **Plan a fix** - Use `agentbrain spec` to think through the proper solution
+4. **Implement** - With a clear plan, the doom loop usually breaks
+
+### For AI Agents (MCP)
+
+Doom warnings automatically appear in MCP tool responses:
+- `load_context` - Returns `doom_warning` field
+- `load_spec` - Returns `doom_warning` field
+- `save_handoff` - Appends doom section to handoff document
+
+Your AI agent can proactively suggest stopping to investigate when it sees these warnings.
+
+### Manual Check
+
+```bash
+# Check for doom loops manually
+agentbrain doom
+
+# Adjust sensitivity
+agentbrain doom --commits 15 --threshold 6
+```
 
 ---
 

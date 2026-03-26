@@ -20,7 +20,7 @@ const program = new Command()
 program
   .name('agentbrain')
   .description('Generate smart context docs for coding agents')
-  .version('1.4.32')
+  .version('1.4.33')
   .hook('preAction', async () => {
     // Check for pending doom warnings before every command
     try {
