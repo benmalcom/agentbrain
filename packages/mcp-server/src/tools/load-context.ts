@@ -117,7 +117,23 @@ export async function loadContext(input: LoadContextInput): Promise<LoadContextO
   }
 
   // Need to generate - requires API key (only loaded if we reach this point)
-  const aiConfig = await loadAIConfig()
+  let aiConfig
+  try {
+    aiConfig = await loadAIConfig()
+  } catch {
+    // No API key configured - return helpful message
+    return {
+      content:
+        'No context found for this repository and no API key configured.\n\n' +
+        'To fix:\n' +
+        '1. Run `agentbrain setup` in your repo to generate context (one-time, ~$0.03)\n' +
+        '2. After setup, load_context works without an API key\n\n' +
+        'The API key is only needed for first-time generation.',
+      fromCache: false,
+      tokensUsed: 0,
+      doom_warning: null,
+    }
+  }
 
   // Generate new context
   const result = await generateContext({
